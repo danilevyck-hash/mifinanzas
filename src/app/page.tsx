@@ -1,23 +1,39 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { PersonalExpense, CATEGORY_COLORS } from "@/lib/supabase";
 import { formatCurrency, formatDate, MONTH_NAMES } from "@/lib/format";
 import ExpenseModal from "@/components/ExpenseModal";
 import ExportModal from "@/components/ExportModal";
 
 export default function Home() {
+  return (
+    <Suspense fallback={<div className="text-center py-12 text-muted">Cargando...</div>}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const paramMonth = searchParams.get("month");
+  const paramYear = searchParams.get("year");
+
+  const now = new Date();
+  const viewMonth = paramMonth !== null ? parseInt(paramMonth) : now.getMonth();
+  const viewYear = paramYear !== null ? parseInt(paramYear) : now.getFullYear();
+  const isCurrentMonth = viewMonth === now.getMonth() && viewYear === now.getFullYear();
+
   const [expenses, setExpenses] = useState<PersonalExpense[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<PersonalExpense | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
-  const dateFrom = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-01`;
-  const lastDay = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-  const dateTo = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  const dateFrom = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
+  const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const dateTo = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
   const fetchExpenses = useCallback(async () => {
     try {
@@ -72,11 +88,6 @@ export default function Home() {
     fetchAllExpenses();
   };
 
-  const years = useMemo(() => {
-    const curr = new Date().getFullYear();
-    return [curr, curr - 1, curr - 2];
-  }, []);
-
   const categoryData = useMemo(() => {
     const map: Record<string, number> = {};
     expenses.forEach((e) => { map[e.category] = (map[e.category] || 0) + e.amount; });
@@ -100,31 +111,21 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      {/* Month/Year selector */}
-      <div className="flex items-center justify-center gap-3">
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-          className="border border-gray-200 rounded-xl px-4 py-2 text-primary font-medium focus:ring-2 focus:ring-accent outline-none bg-white"
-        >
-          {MONTH_NAMES.map((m, i) => (
-            <option key={i} value={i}>{m}</option>
-          ))}
-        </select>
-        <select
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-          className="border border-gray-200 rounded-xl px-4 py-2 text-primary font-medium focus:ring-2 focus:ring-accent outline-none bg-white"
-        >
-          {years.map((y) => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
+      {/* Month label */}
+      <div className="text-center">
+        <h1 className="text-xl font-semibold text-primary">
+          {MONTH_NAMES[viewMonth]} {viewYear}
+        </h1>
+        {!isCurrentMonth && (
+          <a href="/" className="text-sm text-accent hover:text-accent-light transition-colors">
+            ← Volver al mes actual
+          </a>
+        )}
       </div>
 
       {/* KPI */}
       <div className="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-accent text-center">
-        <p className="text-sm text-muted uppercase tracking-wider">Total {MONTH_NAMES[selectedMonth]}</p>
+        <p className="text-sm text-muted uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
         <p className="text-3xl font-bold text-primary mt-1">{formatCurrency(totalMonth)}</p>
         <p className="text-sm text-muted mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
       </div>
