@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import { AuthProvider } from "@/lib/auth";
+import AppShell from "@/components/AppShell";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 
 export const metadata: Metadata = {
@@ -37,10 +38,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="bg-surface min-h-screen">
-        <Navbar />
-        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {children}
-        </main>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
         <ServiceWorkerRegistrar />
       </body>
     </html>

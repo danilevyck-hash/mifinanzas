@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { PersonalExpense } from "@/lib/supabase";
+import { PersonalExpense, Category } from "@/lib/supabase";
 import { formatDate, formatDateExport, formatCurrency, MONTH_NAMES } from "@/lib/format";
 
 type FilterPreset = "this_month" | "last_month" | "this_year" | "custom";
@@ -10,6 +10,7 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   expenses: PersonalExpense[];
+  categories?: Category[];
 };
 
 export default function ExportModal({ isOpen, onClose, expenses }: Props) {
@@ -81,7 +82,7 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
         { header: "Fecha", key: "date", width: 16 },
         { header: "Monto", key: "amount", width: 14 },
         { header: "Categoría", key: "category", width: 18 },
-        { header: "Subcategoría", key: "subcategory", width: 20 },
+        { header: "Notas", key: "notes", width: 20 },
         { header: "Método", key: "method", width: 18 },
       ];
 
@@ -96,7 +97,7 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
           date: formatDateExport(e.date),
           amount: e.amount,
           category: e.category,
-          subcategory: e.subcategory || "",
+          notes: e.notes || "",
           method: e.payment_method,
         });
       });
@@ -157,8 +158,8 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
 
       autoTable(doc, {
         startY: 42,
-        head: [["#", "Fecha", "Monto", "Categoría", "Subcategoría", "Método"]],
-        body: filtered.map((e, i) => [i + 1, formatDateExport(e.date), formatCurrency(e.amount), e.category, e.subcategory || "", e.payment_method]),
+        head: [["#", "Fecha", "Monto", "Categoría", "Notas", "Método"]],
+        body: filtered.map((e, i) => [i + 1, formatDateExport(e.date), formatCurrency(e.amount), e.category, e.notes || "", e.payment_method]),
         headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: "bold", halign: "center" },
         columnStyles: {
           0: { halign: "center", cellWidth: 10 },

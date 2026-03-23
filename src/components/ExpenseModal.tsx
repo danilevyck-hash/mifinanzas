@@ -1,47 +1,86 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PersonalExpense, EXPENSE_CATEGORIES, PAYMENT_METHODS } from "@/lib/supabase";
+import { PersonalExpense, Category, PAYMENT_METHODS, DEFAULT_COLORS } from "@/lib/supabase";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSave: (expense: Partial<PersonalExpense>) => void;
   editingExpense: PersonalExpense | null;
+  categories: Category[];
+  onCategoryCreated: () => void;
+  userId: number;
 };
 
-export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense }: Props) {
+export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, categories, onCategoryCreated, userId }: Props) {
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
-  const [subcategory, setSubcategory] = useState("");
+  const [category, setCategory] = useState("");
+  const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>(PAYMENT_METHODS[0]);
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   useEffect(() => {
     if (editingExpense) {
       setDate(editingExpense.date);
       setAmount(editingExpense.amount.toString());
       setCategory(editingExpense.category);
-      setSubcategory(editingExpense.subcategory || "");
+      setNotes(editingExpense.notes || "");
       setPaymentMethod(editingExpense.payment_method);
     } else {
       setDate(new Date().toISOString().split("T")[0]);
       setAmount("");
-      setCategory(EXPENSE_CATEGORIES[0]);
-      setSubcategory("");
+      setCategory(categories.length > 0 ? categories[0].name : "");
+      setNotes("");
       setPaymentMethod(PAYMENT_METHODS[0]);
     }
-  }, [editingExpense, isOpen]);
+    setShowNewCategory(false);
+    setNewCategoryName("");
+  }, [editingExpense, isOpen, categories]);
 
   if (!isOpen) return null;
+
+  const handleCategoryChange = (value: string) => {
+    if (value === "__new__") {
+      setShowNewCategory(true);
+    } else {
+      setCategory(value);
+      setShowNewCategory(false);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    setCreatingCategory(true);
+    try {
+      const colorIdx = categories.length % DEFAULT_COLORS.length;
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, name: newCategoryName.trim(), color: DEFAULT_COLORS[colorIdx] }),
+      });
+      if (res.ok) {
+        setCategory(newCategoryName.trim());
+        setShowNewCategory(false);
+        setNewCategoryName("");
+        onCategoryCreated();
+      }
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const expense: Partial<PersonalExpense> = {
+      user_id: userId,
       date,
       amount: parseFloat(amount) || 0,
       category,
-      subcategory: subcategory.trim() || undefined,
+      notes: notes.trim() || undefined,
       payment_method: paymentMethod,
     };
     if (editingExpense) {
@@ -83,25 +122,54 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense }
           </div>
           <div>
             <label className="block text-sm font-medium text-primary mb-1">Categoría</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white transition-shadow"
-              required
-            >
-              {EXPENSE_CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            {!showNewCategory ? (
+              <select
+                value={category}
+                onChange={(e) => handleCategoryChange(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white transition-shadow"
+                required
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+                <option value="__new__">+ Crear nueva categoría...</option>
+              </select>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
+                  placeholder="Nombre de la categoría"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateCategory}
+                  disabled={creatingCategory || !newCategoryName.trim()}
+                  className="bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold px-4 rounded-xl transition-colors text-sm"
+                >
+                  {creatingCategory ? "..." : "Crear"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowNewCategory(false); setCategory(categories.length > 0 ? categories[0].name : ""); }}
+                  className="text-muted hover:text-primary px-2 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">Subcategoría</label>
+            <label className="block text-sm font-medium text-primary mb-1">Notas</label>
             <input
               type="text"
-              value={subcategory}
-              onChange={(e) => setSubcategory(e.target.value)}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
-              placeholder="Ej: gasolina, luz, Netflix..."
+              placeholder="Descripción del gasto..."
             />
           </div>
           <div>
