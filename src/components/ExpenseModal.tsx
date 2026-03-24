@@ -37,7 +37,7 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
       setNotes("");
       setPaymentMethod(PAYMENT_METHODS[0]);
     }
-    setShowNewCategory(false);
+    setShowNewCategory(categories.length === 0);
     setNewCategoryName("");
   }, [editingExpense, isOpen, categories]);
 
@@ -152,13 +152,15 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
                 >
                   {creatingCategory ? "..." : "Crear"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowNewCategory(false); setCategory(categories.length > 0 ? categories[0].name : ""); }}
-                  className="text-muted hover:text-primary px-2 transition-colors"
-                >
-                  ✕
-                </button>
+                {categories.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowNewCategory(false); setCategory(categories[0].name); }}
+                    className="text-muted hover:text-primary px-2 transition-colors"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             )}
           </div>
