@@ -1,11 +1,12 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-server";
+import { getAuthUserId } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get("user_id");
-  if (!userId) return NextResponse.json({ error: "user_id required" }, { status: 400 });
+  const userId = getAuthUserId(request);
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("categories")
     .select("*")
     .eq("user_id", userId)
@@ -16,11 +17,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const userId = getAuthUserId(request);
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
   const body = await request.json();
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("categories")
-    .insert([{ user_id: body.user_id, name: body.name, color: body.color }])
+    .insert([{ user_id: userId, name: body.name, color: body.color }])
     .select()
     .single();
 
@@ -29,9 +33,17 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const userId = getAuthUserId(request);
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
   const { id } = await request.json();
 
-  const { error } = await supabase.from("categories").delete().eq("id", id);
+  const { error } = await supabaseAdmin
+    .from("categories")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

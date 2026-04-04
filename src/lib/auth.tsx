@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { User } from "./supabase";
 
 type AuthContextType = {
@@ -8,6 +8,7 @@ type AuthContextType = {
   login: (username: string, password: string) => Promise<string | null>;
   logout: () => void;
   loading: boolean;
+  authFetch: (url: string, options?: RequestInit) => Promise<Response>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => null,
   logout: () => {},
   loading: true,
+  authFetch: () => Promise.resolve(new Response()),
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -28,9 +30,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(JSON.parse(stored));
       } catch {
         localStorage.removeItem("mifinanzas_user");
+        localStorage.removeItem("mifinanzas_token");
       }
     }
     setLoading(false);
+  }, []);
+
+  const authFetch = useCallback(async (url: string, options?: RequestInit): Promise<Response> => {
+    const token = localStorage.getItem("mifinanzas_token");
+    return fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers || {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
   }, []);
 
   const login = async (username: string, password: string): Promise<string | null> => {
@@ -41,22 +56,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ username, password }),
       });
       const data = await res.json();
-      if (!res.ok) return data.error || "Error al iniciar sesión";
-      setUser(data);
-      localStorage.setItem("mifinanzas_user", JSON.stringify(data));
+      if (!res.ok) return data.error || "Error al iniciar sesion";
+      const { token, ...userData } = data;
+      setUser(userData);
+      localStorage.setItem("mifinanzas_user", JSON.stringify(userData));
+      if (token) localStorage.setItem("mifinanzas_token", token);
       return null;
     } catch {
-      return "Error de conexión";
+      return "Error de conexion";
     }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem("mifinanzas_user");
+    localStorage.removeItem("mifinanzas_token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, authFetch }}>
       {children}
     </AuthContext.Provider>
   );

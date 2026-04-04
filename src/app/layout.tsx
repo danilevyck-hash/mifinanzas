@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import AppShell from "@/components/AppShell";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
+import { ToastProvider } from "@/components/Toast";
 
 export const metadata: Metadata = {
   title: "MiFinanzas",
@@ -28,6 +29,8 @@ export const viewport: Viewport = {
   themeColor: "#0F172A",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -39,7 +42,9 @@ export default function RootLayout({
     <html lang="es">
       <body className="bg-surface min-h-screen">
         <AuthProvider>
-          <AppShell>{children}</AppShell>
+          <ToastProvider>
+            <AppShell>{children}</AppShell>
+          </ToastProvider>
         </AuthProvider>
         <ServiceWorkerRegistrar />
       </body>

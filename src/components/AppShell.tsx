@@ -23,7 +23,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted">Cargando...</p>
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-muted text-sm">Cargando...</p>
+        </div>
       </div>
     );
   }
@@ -33,7 +36,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       {!isLoginPage && <Navbar />}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 sm:pb-6">
         {children}
       </main>
     </>

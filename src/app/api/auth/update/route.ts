@@ -1,34 +1,49 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-server";
+import { getAuthUserId } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 
 export async function PUT(request: NextRequest) {
-  const body = await request.json();
-  const { id, current_password } = body;
+  const authUserId = getAuthUserId(request);
+  if (!authUserId) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
 
-  // Verify current password
-  const { data: user, error: findErr } = await supabase
+  const body = await request.json();
+  const { current_password } = body;
+
+  const { data: user, error: findErr } = await supabaseAdmin
     .from("users")
-    .select("id")
-    .eq("id", id)
-    .eq("password", current_password)
+    .select("id, password")
+    .eq("id", authUserId)
     .single();
 
   if (findErr || !user) {
-    return NextResponse.json({ error: "Contraseña actual incorrecta" }, { status: 401 });
+    return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+  }
+
+  let passwordValid = false;
+  if (user.password.startsWith("$2")) {
+    passwordValid = await bcrypt.compare(current_password, user.password);
+  } else {
+    passwordValid = user.password === current_password;
+  }
+
+  if (!passwordValid) {
+    return NextResponse.json({ error: "Contrasena actual incorrecta" }, { status: 401 });
   }
 
   const updates: Record<string, string> = {};
   if (body.username) updates.username = body.username;
   if (body.display_name) updates.display_name = body.display_name;
-  if (body.new_password) updates.password = body.new_password;
+  if (body.new_password) updates.password = await bcrypt.hash(body.new_password, 10);
 
-  // Check username uniqueness if changing it
   if (body.username) {
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseAdmin
       .from("users")
       .select("id")
       .eq("username", body.username)
-      .neq("id", id)
+      .neq("id", authUserId)
       .single();
 
     if (existing) {
@@ -36,10 +51,14 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  const { data, error } = await supabase
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No hay cambios" }, { status: 400 });
+  }
+
+  const { data, error } = await supabaseAdmin
     .from("users")
     .update(updates)
-    .eq("id", id)
+    .eq("id", authUserId)
     .select("id, username, display_name")
     .single();
 

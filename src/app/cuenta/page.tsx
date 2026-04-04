@@ -2,71 +2,70 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/components/Toast";
 
 export default function CuentaPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, authFetch } = useAuth();
+  const { toast } = useToast();
   const [username, setUsername] = useState(user?.username || "");
   const [displayName, setDisplayName] = useState(user?.display_name || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   if (!user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setMessage("");
 
     if (!currentPassword) {
-      setError("Ingresa tu contraseña actual para guardar cambios");
+      toast("Ingresa tu contrasena actual para guardar cambios", "error");
       return;
     }
 
     if (newPassword && newPassword !== confirmPassword) {
-      setError("Las contraseñas nuevas no coinciden");
+      toast("Las contrasenas nuevas no coinciden", "error");
+      return;
+    }
+
+    if (newPassword && newPassword.length < 4) {
+      toast("La contrasena debe tener al menos 4 caracteres", "error");
       return;
     }
 
     setSaving(true);
     try {
       const body: Record<string, string | number> = {
-        id: user.id,
         current_password: currentPassword,
       };
       if (username !== user.username) body.username = username;
       if (displayName !== user.display_name) body.display_name = displayName;
       if (newPassword) body.new_password = newPassword;
 
-      const res = await fetch("/api/auth/update", {
+      const res = await authFetch("/api/auth/update", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error);
+        toast(data.error || "Error al guardar", "error");
         return;
       }
 
-      // Update local storage with new user data
       localStorage.setItem("mifinanzas_user", JSON.stringify(data));
-      setMessage("Cambios guardados. Vuelve a iniciar sesión para ver los cambios.");
+      toast("Cambios guardados");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
 
-      // If username or password changed, logout for security
       if (username !== user.username || newPassword) {
         setTimeout(() => logout(), 1500);
       }
     } catch {
-      setError("Error de conexión");
+      toast("Error de conexion", "error");
     } finally {
       setSaving(false);
     }
@@ -76,21 +75,14 @@ export default function CuentaPage() {
     <div className="max-w-md mx-auto space-y-6">
       <h1 className="text-xl font-semibold text-primary text-center">Mi Cuenta</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 text-center">{error}</div>
-        )}
-        {message && (
-          <div className="bg-green-50 text-green-600 text-sm rounded-xl px-4 py-2 text-center">{message}</div>
-        )}
-
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
         <div>
           <label className="block text-sm font-medium text-primary mb-1">Nombre</label>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
+            className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
             required
           />
         </div>
@@ -101,7 +93,7 @@ export default function CuentaPage() {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
+            className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
             required
           />
         </div>
@@ -109,25 +101,25 @@ export default function CuentaPage() {
         <hr className="border-gray-100" />
 
         <div>
-          <label className="block text-sm font-medium text-primary mb-1">Nueva Contraseña</label>
+          <label className="block text-sm font-medium text-primary mb-1">Nueva Contrasena</label>
           <input
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
-            placeholder="Dejar vacío para no cambiar"
+            className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+            placeholder="Dejar vacio para no cambiar"
           />
         </div>
 
         {newPassword && (
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">Confirmar Nueva Contraseña</label>
+            <label className="block text-sm font-medium text-primary mb-1">Confirmar Nueva Contrasena</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
-              placeholder="Repite la nueva contraseña"
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+              placeholder="Repite la nueva contrasena"
             />
           </div>
         )}
@@ -135,12 +127,12 @@ export default function CuentaPage() {
         <hr className="border-gray-100" />
 
         <div>
-          <label className="block text-sm font-medium text-primary mb-1">Contraseña Actual *</label>
+          <label className="block text-sm font-medium text-primary mb-1">Contrasena Actual *</label>
           <input
             type="password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
+            className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
             placeholder="Requerida para guardar cambios"
             required
           />
@@ -149,11 +141,21 @@ export default function CuentaPage() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors"
+          className="w-full bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
         >
           {saving ? "Guardando..." : "Guardar Cambios"}
         </button>
       </form>
+
+      {/* Logout button - visible on mobile where bottom nav doesn't have it */}
+      <div className="sm:hidden">
+        <button
+          onClick={logout}
+          className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+        >
+          Cerrar Sesion
+        </button>
+      </div>
     </div>
   );
 }

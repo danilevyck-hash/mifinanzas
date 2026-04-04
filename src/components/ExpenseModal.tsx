@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PersonalExpense, Category, PAYMENT_METHODS, DEFAULT_COLORS } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth";
 
 type Props = {
   isOpen: boolean;
@@ -11,9 +12,11 @@ type Props = {
   categories: Category[];
   onCategoryCreated: () => void;
   userId: number;
+  saving?: boolean;
 };
 
-export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, categories, onCategoryCreated, userId }: Props) {
+export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, categories, onCategoryCreated, userId, saving }: Props) {
+  const { authFetch } = useAuth();
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -57,10 +60,9 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
     setCreatingCategory(true);
     try {
       const colorIdx = categories.length % DEFAULT_COLORS.length;
-      const res = await fetch("/api/categories", {
+      const res = await authFetch("/api/categories", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, name: newCategoryName.trim(), color: DEFAULT_COLORS[colorIdx] }),
+        body: JSON.stringify({ name: newCategoryName.trim(), color: DEFAULT_COLORS[colorIdx] }),
       });
       if (res.ok) {
         setCategory(newCategoryName.trim());
@@ -90,21 +92,32 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="bg-primary text-white p-4 rounded-t-2xl">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+      <div
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
           <h2 className="text-lg font-semibold">
             {editingExpense ? "Editar Gasto" : "Nuevo Gasto"}
           </h2>
+          <button
+            onClick={onClose}
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-primary mb-1">Fecha</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
               required
             />
           </div>
@@ -113,26 +126,27 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
             <input
               type="number"
               step="0.01"
+              inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
               placeholder="0.00"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">Categoría</label>
+            <label className="block text-sm font-medium text-primary mb-1">Categoria</label>
             {!showNewCategory ? (
               <select
                 value={category}
                 onChange={(e) => handleCategoryChange(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white transition-shadow"
+                className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white transition-shadow text-base"
                 required
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
-                <option value="__new__">+ Crear nueva categoría...</option>
+                <option value="__new__">+ Crear nueva categoria...</option>
               </select>
             ) : (
               <div className="flex gap-2">
@@ -140,15 +154,15 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
                   type="text"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
-                  placeholder="Nombre de la categoría"
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+                  placeholder="Nombre de la categoria"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={handleCreateCategory}
                   disabled={creatingCategory || !newCategoryName.trim()}
-                  className="bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold px-4 rounded-xl transition-colors text-sm"
+                  className="bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold px-4 rounded-xl transition-colors text-sm min-h-[48px]"
                 >
                   {creatingCategory ? "..." : "Crear"}
                 </button>
@@ -156,9 +170,11 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
                   <button
                     type="button"
                     onClick={() => { setShowNewCategory(false); setCategory(categories[0].name); }}
-                    className="text-muted hover:text-primary px-2 transition-colors"
+                    className="text-muted hover:text-primary min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
                   >
-                    ✕
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 )}
               </div>
@@ -170,16 +186,16 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
-              placeholder="Descripción del gasto..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+              placeholder="Descripcion del gasto..."
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">Método de Pago</label>
+            <label className="block text-sm font-medium text-primary mb-1">Metodo de Pago</label>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white transition-shadow"
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white transition-shadow text-base"
               required
             >
               {PAYMENT_METHODS.map((m) => (
@@ -190,14 +206,15 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              className="flex-1 bg-accent hover:bg-accent-light text-white font-semibold py-2.5 rounded-xl transition-colors"
+              disabled={saving}
+              className="flex-1 bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
             >
-              {editingExpense ? "Guardar" : "Agregar"}
+              {saving ? "Guardando..." : editingExpense ? "Guardar" : "Agregar"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl transition-colors"
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
             >
               Cancelar
             </button>

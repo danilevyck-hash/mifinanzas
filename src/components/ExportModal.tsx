@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { PersonalExpense, Category } from "@/lib/supabase";
 import { formatDate, formatDateExport, formatCurrency, MONTH_NAMES } from "@/lib/format";
+import { useToast } from "./Toast";
 
 type FilterPreset = "this_month" | "last_month" | "this_year" | "custom";
 
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export default function ExportModal({ isOpen, onClose, expenses }: Props) {
+  const { toast } = useToast();
   const [preset, setPreset] = useState<FilterPreset>("this_month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -42,12 +44,12 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
       case "last_month":
         return { dateFrom: lastMonthFrom, dateTo: lastMonthTo, rangeLabel: `${MONTH_NAMES[lastMonthIdx]} ${currentYear}` };
       case "this_year":
-        return { dateFrom: `${currentYear}-01-01`, dateTo: `${currentYear}-12-31`, rangeLabel: `Año ${currentYear}` };
+        return { dateFrom: `${currentYear}-01-01`, dateTo: `${currentYear}-12-31`, rangeLabel: `Ano ${currentYear}` };
       case "custom":
         return {
           dateFrom: customFrom, dateTo: customTo,
           rangeLabel: customFrom || customTo
-            ? `${customFrom ? formatDate(customFrom) : "Inicio"} — ${customTo ? formatDate(customTo) : "Fin"}`
+            ? `${customFrom ? formatDate(customFrom) : "Inicio"} - ${customTo ? formatDate(customTo) : "Fin"}`
             : "Seleccione fechas",
         };
     }
@@ -66,7 +68,7 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
   const presets: { key: FilterPreset; label: string }[] = [
     { key: "this_month", label: "Este mes" },
     { key: "last_month", label: "Mes anterior" },
-    { key: "this_year", label: `Año ${currentYear}` },
+    { key: "this_year", label: `Ano ${currentYear}` },
     { key: "custom", label: "Personalizado" },
   ];
 
@@ -81,9 +83,9 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
         { header: "#", key: "num", width: 6 },
         { header: "Fecha", key: "date", width: 16 },
         { header: "Monto", key: "amount", width: 14 },
-        { header: "Categoría", key: "category", width: 18 },
+        { header: "Categoria", key: "category", width: 18 },
         { header: "Notas", key: "notes", width: 20 },
-        { header: "Método", key: "method", width: 18 },
+        { header: "Metodo", key: "method", width: 18 },
       ];
 
       const headerRow = sheet.getRow(1);
@@ -104,10 +106,9 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
 
       sheet.getColumn("amount").numFmt = "$#,##0.00";
 
-      // Summary sheet
       const summary = workbook.addWorksheet("Resumen");
       summary.columns = [
-        { header: "Categoría", key: "category", width: 20 },
+        { header: "Categoria", key: "category", width: 20 },
         { header: "Total", key: "total", width: 14 },
         { header: "%", key: "pct", width: 10 },
       ];
@@ -131,7 +132,10 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
       a.download = `mifinanzas_${dateFrom || "inicio"}_${dateTo || "fin"}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
+      toast("Excel exportado");
       onClose();
+    } catch {
+      toast("Error al exportar Excel", "error");
     } finally {
       setExporting(false);
     }
@@ -158,7 +162,7 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
 
       autoTable(doc, {
         startY: 42,
-        head: [["#", "Fecha", "Monto", "Categoría", "Notas", "Método"]],
+        head: [["#", "Fecha", "Monto", "Categoria", "Notas", "Metodo"]],
         body: filtered.map((e, i) => [i + 1, formatDateExport(e.date), formatCurrency(e.amount), e.category, e.notes || "", e.payment_method]),
         headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: "bold", halign: "center" },
         columnStyles: {
@@ -179,30 +183,44 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
           }
           doc.setFontSize(8);
           doc.setTextColor(150, 150, 150);
-          doc.text(`Página ${data.pageNumber}`, 105, doc.internal.pageSize.height - 10, { align: "center" });
+          doc.text(`Pagina ${data.pageNumber}`, 105, doc.internal.pageSize.height - 10, { align: "center" });
         },
       });
 
       doc.save(`mifinanzas_${dateFrom || "inicio"}_${dateTo || "fin"}.pdf`);
+      toast("PDF exportado");
       onClose();
+    } catch {
+      toast("Error al exportar PDF", "error");
     } finally {
       setExporting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="bg-primary text-white p-4 rounded-t-2xl">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+      <div
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
           <h2 className="text-lg font-semibold">Exportar Gastos</h2>
+          <button
+            onClick={onClose}
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-2">
             {presets.map((p) => (
               <button
                 key={p.key}
                 onClick={() => setPreset(p.key)}
-                className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors border-2 ${
+                className={`px-3 py-3 rounded-xl text-sm font-medium transition-colors border-2 min-h-[48px] ${
                   preset === p.key
                     ? "border-accent bg-accent/10 text-primary"
                     : "border-gray-200 text-gray-500 hover:border-gray-300"
@@ -218,17 +236,17 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
               <div>
                 <label className="block text-sm font-medium text-primary mb-1">Desde</label>
                 <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent outline-none text-sm" />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent outline-none text-base" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-primary mb-1">Hasta</label>
                 <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent outline-none text-sm" />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent outline-none text-base" />
               </div>
             </div>
           )}
 
-          <div className="bg-surface rounded-xl p-3 text-center space-y-1">
+          <div className="bg-surface rounded-xl p-4 text-center space-y-1">
             <p className="text-xs text-muted">{rangeLabel}</p>
             <p className="text-primary font-medium">{filtered.length} gasto{filtered.length !== 1 ? "s" : ""} a exportar</p>
             <p className="text-sm text-muted">Total: {formatCurrency(totalAmount)}</p>
@@ -236,16 +254,12 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
 
           <div className="flex gap-3 pt-2">
             <button onClick={handleExportExcel} disabled={filtered.length === 0 || exporting}
-              className="flex-1 bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm">
-              {exporting ? "..." : "Excel"}
+              className="flex-1 bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors text-base min-h-[48px]">
+              {exporting ? "Exportando..." : "Excel"}
             </button>
             <button onClick={handleExportPDF} disabled={filtered.length === 0 || exporting}
-              className="flex-1 bg-primary hover:bg-primary/80 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm">
-              {exporting ? "..." : "PDF"}
-            </button>
-            <button onClick={onClose}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-2.5 rounded-xl transition-colors text-sm">
-              Cancelar
+              className="flex-1 bg-primary hover:bg-primary/80 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors text-base min-h-[48px]">
+              {exporting ? "Exportando..." : "PDF"}
             </button>
           </div>
         </div>
