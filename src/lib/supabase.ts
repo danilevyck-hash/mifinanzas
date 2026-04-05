@@ -35,6 +35,16 @@ export const PAYMENT_METHODS = [
   "Tarjeta de Crédito",
 ] as const;
 
+export type CategoryBudget = {
+  id: string;
+  user_id: number;
+  category: string;
+  budget_amount: number;
+  month: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export const DEFAULT_COLORS = [
   "#EF4444", "#3B82F6", "#10B981", "#F59E0B",
   "#8B5CF6", "#6B7280", "#EC4899", "#14B8A6",

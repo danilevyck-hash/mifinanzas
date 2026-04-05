@@ -2,12 +2,13 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { PersonalExpense, Category } from "@/lib/supabase";
+import { PersonalExpense, Category, CategoryBudget } from "@/lib/supabase";
 import { formatCurrency, formatDate, MONTH_NAMES } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import ExpenseModal from "@/components/ExpenseModal";
 import ExportModal from "@/components/ExportModal";
+import BudgetModal from "@/components/BudgetModal";
 
 export default function Home() {
   return (
@@ -38,7 +39,12 @@ function HomeContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
+  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
+  const [budgetCategory, setBudgetCategory] = useState("");
+  const [alertsShown, setAlertsShown] = useState(false);
 
+  const viewMonthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
   const dateFrom = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
   const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
   const dateTo = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
@@ -54,6 +60,17 @@ function HomeContent() {
     } catch { /* network error */ }
   }, [user, authFetch]);
 
+  const fetchBudgets = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await authFetch(`/api/category-budgets?month=${viewMonthStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setBudgets(data);
+      }
+    } catch { /* network error */ }
+  }, [user, authFetch, viewMonthStr]);
+
   const fetchExpenses = useCallback(async () => {
     if (!user) return;
     try {
@@ -68,6 +85,7 @@ function HomeContent() {
 
   useEffect(() => { setLoading(true); fetchExpenses(); }, [fetchExpenses]);
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  useEffect(() => { fetchBudgets(); setAlertsShown(false); }, [fetchBudgets]);
 
   const totalMonth = expenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -94,6 +112,27 @@ function HomeContent() {
       setModalOpen(false);
       setEditing(null);
       toast(expense.id ? "Gasto actualizado" : "Gasto agregado");
+      // Check budget alert for this category after save
+      if (expense.category && expense.date) {
+        const expenseMonth = expense.date.substring(0, 7);
+        if (expenseMonth === viewMonthStr) {
+          const budget = budgetMap[expense.category];
+          if (budget && budget > 0) {
+            const currentTotal = expenses
+              .filter((e) => e.category === expense.category)
+              .reduce((sum, e) => sum + e.amount, 0);
+            const newTotal = expense.id
+              ? currentTotal - (editing?.amount || 0) + (expense.amount || 0)
+              : currentTotal + (expense.amount || 0);
+            const pct = (newTotal / budget) * 100;
+            if (pct >= 100) {
+              toast(`\u{1F6A8} ${expense.category}: Presupuesto agotado — ${formatCurrency(newTotal)} de ${formatCurrency(budget)}`, "danger");
+            } else if (pct >= 80) {
+              toast(`\u26A0\uFE0F ${expense.category}: Llevas ${formatCurrency(newTotal)} de ${formatCurrency(budget)} (${Math.round(pct)}%)`, "warning");
+            }
+          }
+        }
+      }
       fetchExpenses();
       fetchAllExpenses();
     } catch {
@@ -139,6 +178,31 @@ function HomeContent() {
       }))
       .sort((a, b) => b.total - a.total);
   }, [expenses, totalMonth, colorMap]);
+
+  const budgetMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    budgets.forEach((b) => { map[b.category] = b.budget_amount; });
+    return map;
+  }, [budgets]);
+
+  // Budget alerts on load
+  useEffect(() => {
+    if (alertsShown || categoryData.length === 0 || budgets.length === 0) return;
+    setAlertsShown(true);
+    let count = 0;
+    for (const cat of categoryData) {
+      const budget = budgetMap[cat.name];
+      if (!budget || budget <= 0) continue;
+      const pct = (cat.total / budget) * 100;
+      if (pct >= 100 && count < 3) {
+        toast(`\u{1F6A8} ${cat.name}: Presupuesto agotado — ${formatCurrency(cat.total)} de ${formatCurrency(budget)}`, "danger");
+        count++;
+      } else if (pct >= 80 && count < 3) {
+        toast(`\u26A0\uFE0F ${cat.name}: Llevas ${formatCurrency(cat.total)} de ${formatCurrency(budget)} (${Math.round(pct)}%)`, "warning");
+        count++;
+      }
+    }
+  }, [alertsShown, categoryData, budgets, budgetMap, toast]);
 
   const methodData = useMemo(() => {
     const map: Record<string, number> = {};
@@ -203,18 +267,52 @@ function HomeContent() {
       {categoryData.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <h2 className="text-base font-semibold text-primary mb-3">Por Categoria</h2>
-          <div className="space-y-2.5">
-            {categoryData.map((cat) => (
-              <div key={cat.name}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-primary">{cat.name}</span>
-                  <span className="text-muted">{formatCurrency(cat.total)} ({cat.pct.toFixed(0)}%)</span>
+          <div className="space-y-4">
+            {categoryData.map((cat) => {
+              const budget = budgetMap[cat.name];
+              const hasBudget = budget != null && budget > 0;
+              const budgetPct = hasBudget ? (cat.total / budget) * 100 : 0;
+              const budgetBarColor = budgetPct >= 100 ? "#ef4444" : budgetPct >= 80 ? "#f59e0b" : "#1e3a5f";
+
+              return (
+                <div key={cat.name}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-primary">{cat.name}</span>
+                      <button
+                        onClick={() => { setBudgetCategory(cat.name); setBudgetModalOpen(true); }}
+                        className="text-muted hover:text-accent transition-colors"
+                        title="Configurar presupuesto"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <span className="text-muted">{formatCurrency(cat.total)} ({cat.pct.toFixed(0)}%)</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${cat.pct}%`, backgroundColor: cat.color }} />
+                  </div>
+                  {hasBudget ? (
+                    <>
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mt-1.5">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted mt-0.5">
+                        {formatCurrency(cat.total)} / {formatCurrency(budget)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-300 mt-1">Sin presupuesto</p>
+                  )}
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${cat.pct}%`, backgroundColor: cat.color }} />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-4 flex rounded-full h-4 overflow-hidden">
             {categoryData.map((cat) => (
@@ -406,6 +504,14 @@ function HomeContent() {
         saving={saving}
       />
       <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} expenses={allExpenses} categories={categories} />
+      <BudgetModal
+        isOpen={budgetModalOpen}
+        onClose={() => setBudgetModalOpen(false)}
+        category={budgetCategory}
+        month={viewMonthStr}
+        existingBudget={budgets.find((b) => b.category === budgetCategory) || null}
+        onSaved={fetchBudgets}
+      />
     </div>
   );
 }
