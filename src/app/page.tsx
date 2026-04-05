@@ -185,12 +185,70 @@ function HomeContent() {
     return map;
   }, [budgets]);
 
+  // Sorted categories: with budget (by % usage desc) first, without budget last
+  const sortedCategoryData = useMemo(() => {
+    const withBudget = categoryData
+      .filter((cat) => budgetMap[cat.name] != null && budgetMap[cat.name] > 0)
+      .sort((a, b) => {
+        const pctA = (a.total / budgetMap[a.name]) * 100;
+        const pctB = (b.total / budgetMap[b.name]) * 100;
+        return pctB - pctA;
+      });
+    const withoutBudget = categoryData.filter((cat) => !budgetMap[cat.name] || budgetMap[cat.name] <= 0);
+    return [...withBudget, ...withoutBudget];
+  }, [categoryData, budgetMap]);
+
+  // Feature 1 — Budget KPIs
+  const budgetTotal = useMemo(() => budgets.reduce((sum, b) => sum + b.budget_amount, 0), [budgets]);
+  const hasBudgets = budgets.length > 0 && budgetTotal > 0;
+  const daysInMonth = lastDay;
+  const daysPassed = isCurrentMonth ? now.getDate() : lastDay;
+  const daysRemaining = isCurrentMonth ? Math.max(daysInMonth - now.getDate(), 0) : 0;
+  const spentPct = budgetTotal > 0 ? (totalMonth / budgetTotal) * 100 : 0;
+  const available = budgetTotal - totalMonth;
+  const avgDaily = daysPassed > 0 ? totalMonth / daysPassed : 0;
+  const targetDaily = daysRemaining > 0 ? Math.max(available, 0) / daysRemaining : 0;
+
+  // Feature 3 — Trends (vs previous month)
+  const prevMonthData = useMemo(() => {
+    let pm = viewMonth - 1;
+    let py = viewYear;
+    if (pm < 0) { pm = 11; py--; }
+    const prefix = `${py}-${String(pm + 1).padStart(2, "0")}`;
+    const prevExpenses = allExpenses.filter((e) => e.date.startsWith(prefix));
+    const prevTotal = prevExpenses.reduce((sum, e) => sum + e.amount, 0);
+    return { total: prevTotal, hasData: prevExpenses.length > 0 };
+  }, [allExpenses, viewMonth, viewYear]);
+
+  const dominantCategory = useMemo(() => {
+    if (categoryData.length === 0) return null;
+    const topCat = categoryData[0].name;
+    let streak = 1;
+    let m = viewMonth;
+    let y = viewYear;
+    for (let i = 0; i < 5; i++) {
+      m--;
+      if (m < 0) { m = 11; y--; }
+      const prefix = `${y}-${String(m + 1).padStart(2, "0")}`;
+      const monthExpenses = allExpenses.filter((e) => e.date.startsWith(prefix));
+      if (monthExpenses.length === 0) break;
+      const catTotals: Record<string, number> = {};
+      monthExpenses.forEach((e) => { catTotals[e.category] = (catTotals[e.category] || 0) + e.amount; });
+      const topInMonth = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0]?.[0];
+      if (topInMonth === topCat) streak++;
+      else break;
+    }
+    return { name: topCat, streak, color: colorMap[topCat] || "#6B7280" };
+  }, [allExpenses, categoryData, viewMonth, viewYear, colorMap]);
+
+  const hasTrendData = prevMonthData.hasData || (dominantCategory !== null && expenses.length > 0);
+
   // Budget alerts on load
   useEffect(() => {
     if (alertsShown || categoryData.length === 0 || budgets.length === 0) return;
     setAlertsShown(true);
     let count = 0;
-    for (const cat of categoryData) {
+    for (const cat of sortedCategoryData) {
       const budget = budgetMap[cat.name];
       if (!budget || budget <= 0) continue;
       const pct = (cat.total / budget) * 100;
@@ -202,7 +260,7 @@ function HomeContent() {
         count++;
       }
     }
-  }, [alertsShown, categoryData, budgets, budgetMap, toast]);
+  }, [alertsShown, categoryData, sortedCategoryData, budgets, budgetMap, toast]);
 
   const methodData = useMemo(() => {
     const map: Record<string, number> = {};
@@ -256,6 +314,54 @@ function HomeContent() {
         </button>
       </div>
 
+      {/* Budget KPIs — Pulso del mes */}
+      {hasBudgets ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">Gastado</p>
+            <p className="text-2xl font-semibold text-primary mt-1">{formatCurrency(totalMonth)}</p>
+            <p className={`text-xs mt-1 ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-[#1e3a5f]"}`}>
+              {Math.round(spentPct)}% del presupuesto
+            </p>
+          </div>
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">Disponible</p>
+            <p className={`text-2xl font-semibold mt-1 ${available < 0 ? "text-red-500" : "text-primary"}`}>
+              {available < 0 ? `-${formatCurrency(Math.abs(available))} por encima` : formatCurrency(available)}
+            </p>
+            {isCurrentMonth && (
+              <p className="text-xs text-gray-500 mt-1">
+                {daysRemaining === 0 ? "ultimo dia del mes" : `quedan ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}`}
+              </p>
+            )}
+          </div>
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">Promedio diario</p>
+            <p className="text-2xl font-semibold text-primary mt-1">{formatCurrency(avgDaily)}</p>
+            {isCurrentMonth && daysRemaining > 0 && (
+              <p className={`text-xs mt-1 ${avgDaily > targetDaily ? "text-amber-500" : "text-green-500"}`}>
+                target: {formatCurrency(targetDaily)}/dia
+              </p>
+            )}
+          </div>
+        </div>
+      ) : expenses.length > 0 ? (
+        <div className="bg-gray-50 rounded-2xl p-4 text-center">
+          <p className="text-sm text-gray-400">Configura tu presupuesto mensual para ver tus KPIs</p>
+          <button
+            onClick={() => {
+              if (categoryData.length > 0) {
+                setBudgetCategory(categoryData[0].name);
+                setBudgetModalOpen(true);
+              }
+            }}
+            className="text-accent hover:text-accent-light text-sm font-medium mt-1 transition-colors"
+          >
+            Configurar presupuesto
+          </button>
+        </div>
+      ) : null}
+
       {/* Total card */}
       <div className="bg-white rounded-2xl shadow-sm p-5 border-l-4 border-accent text-center">
         <p className="text-xs text-muted uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
@@ -263,21 +369,23 @@ function HomeContent() {
         <p className="text-sm text-muted mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
       </div>
 
-      {/* Category breakdown */}
+      {/* Category breakdown — Apple Storage style */}
       {categoryData.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <h2 className="text-base font-semibold text-primary mb-3">Por Categoria</h2>
           <div className="space-y-4">
-            {categoryData.map((cat) => {
+            {sortedCategoryData.map((cat) => {
               const budget = budgetMap[cat.name];
               const hasBudget = budget != null && budget > 0;
               const budgetPct = hasBudget ? (cat.total / budget) * 100 : 0;
               const budgetBarColor = budgetPct >= 100 ? "#ef4444" : budgetPct >= 80 ? "#f59e0b" : "#1e3a5f";
+              const remaining = hasBudget ? budget - cat.total : 0;
 
               return (
-                <div key={cat.name}>
+                <div key={cat.name} className={!hasBudget ? "opacity-60" : ""}>
                   <div className="flex justify-between text-sm mb-1">
                     <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
                       <span className="font-medium text-primary">{cat.name}</span>
                       <button
                         onClick={() => { setBudgetCategory(cat.name); setBudgetModalOpen(true); }}
@@ -290,25 +398,30 @@ function HomeContent() {
                         </svg>
                       </button>
                     </div>
-                    <span className="text-muted">{formatCurrency(cat.total)} ({cat.pct.toFixed(0)}%)</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${cat.pct}%`, backgroundColor: cat.color }} />
+                    <span className="text-muted text-xs">
+                      {hasBudget ? `${formatCurrency(cat.total)} / ${formatCurrency(budget)}` : formatCurrency(cat.total)}
+                    </span>
                   </div>
                   {hasBudget ? (
                     <>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mt-1.5">
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }}
                         />
                       </div>
-                      <p className="text-xs text-muted mt-0.5">
-                        {formatCurrency(cat.total)} / {formatCurrency(budget)}
+                      <p className={`text-xs mt-1 ${
+                        budgetPct >= 100 ? "text-red-500" : budgetPct >= 80 ? "text-amber-500" : "text-gray-500"
+                      }`}>
+                        {budgetPct >= 100
+                          ? `${formatCurrency(Math.abs(remaining))} por encima del presupuesto`
+                          : budgetPct >= 80
+                            ? `Cuidado — solo quedan ${formatCurrency(remaining)}`
+                            : `Te quedan ${formatCurrency(remaining)}`}
                       </p>
                     </>
                   ) : (
-                    <p className="text-xs text-gray-300 mt-1">Sin presupuesto</p>
+                    <p className="text-xs text-gray-400 mt-1">Sin presupuesto configurado</p>
                   )}
                 </div>
               );
@@ -345,6 +458,49 @@ function HomeContent() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Trend KPIs */}
+      {hasTrendData && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {prevMonthData.hasData ? (
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">vs. mes anterior</p>
+              {(() => {
+                const diff = totalMonth - prevMonthData.total;
+                const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
+                const isMore = diff > 0;
+                return (
+                  <>
+                    <p className={`text-2xl font-semibold mt-1 ${isMore ? "text-red-500" : "text-green-500"}`}>
+                      {isMore ? "+" : ""}{Math.round(changePct)}%
+                    </p>
+                    <p className={`text-xs mt-1 ${isMore ? "text-red-400" : "text-green-400"}`}>
+                      {isMore ? `gastaste ${formatCurrency(diff)} mas` : `ahorraste ${formatCurrency(Math.abs(diff))}`}
+                    </p>
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">vs. mes anterior</p>
+              <p className="text-sm text-gray-400 mt-2">Sin datos previos</p>
+            </div>
+          )}
+          {dominantCategory && expenses.length > 0 && (
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Categoria dominante</p>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: dominantCategory.color }} />
+                <p className="text-2xl font-semibold text-primary">{dominantCategory.name}</p>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {dominantCategory.streak <= 1 ? "este mes" : `${dominantCategory.streak} meses seguidos`}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
