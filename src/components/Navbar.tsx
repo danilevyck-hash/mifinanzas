@@ -35,7 +35,7 @@ export default function Navbar() {
                 <Link
                   href="/"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] flex items-center ${
-                    pathname === "/" ? "bg-accent text-white" : "text-accent-light hover:bg-accent/20"
+                    pathname === "/" ? "bg-blue-500 text-white" : "text-accent-light hover:bg-blue-500/20"
                   }`}
                 >
                   Home
@@ -43,7 +43,7 @@ export default function Navbar() {
                 <Link
                   href="/resumen"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] flex items-center ${
-                    pathname === "/resumen" ? "bg-accent text-white" : "text-accent-light hover:bg-accent/20"
+                    pathname === "/resumen" ? "bg-blue-500 text-white" : "text-accent-light hover:bg-blue-500/20"
                   }`}
                 >
                   Resumen
@@ -97,7 +97,7 @@ export default function Navbar() {
           <Link
             href="/"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${
-              pathname === "/" ? "text-accent" : "text-muted dark:text-gray-400"
+              pathname === "/" ? "text-blue-500" : "text-gray-400"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,7 +108,7 @@ export default function Navbar() {
           <Link
             href="/resumen"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${
-              pathname === "/resumen" ? "text-accent" : "text-muted dark:text-gray-400"
+              pathname === "/resumen" ? "text-blue-500" : "text-gray-400"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,7 +119,7 @@ export default function Navbar() {
           <Link
             href="/cuenta"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${
-              pathname === "/cuenta" ? "text-accent" : "text-muted dark:text-gray-400"
+              pathname === "/cuenta" ? "text-blue-500" : "text-gray-400"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

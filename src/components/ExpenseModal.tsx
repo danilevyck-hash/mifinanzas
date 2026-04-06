@@ -154,14 +154,14 @@ export default function ExpenseModal({
   const dateShortcutClass = (target: string) =>
     `text-xs px-2.5 py-1 rounded-lg transition-colors ${
       date === target
-        ? "bg-accent text-white"
+        ? "bg-blue-500 text-white"
         : "bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400"
     }`;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl dark:shadow-gray-900/20 w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
+        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
@@ -195,7 +195,7 @@ export default function ExpenseModal({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               required
             />
             <p className="text-xs text-muted dark:text-gray-400 mt-0.5">Formato: DD/MM/AAAA</p>
@@ -208,7 +208,7 @@ export default function ExpenseModal({
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="0.00"
               required
             />
@@ -219,7 +219,7 @@ export default function ExpenseModal({
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
                 required
               >
                 {categories.map((c) => (
@@ -238,7 +238,7 @@ export default function ExpenseModal({
               value={notes}
               onChange={(e) => { setNotes(e.target.value); setShowSuggestions(true); }}
               onFocus={() => setShowSuggestions(true)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="Descripcion del gasto..."
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
@@ -251,7 +251,7 @@ export default function ExpenseModal({
                     key={s}
                     type="button"
                     onClick={() => { setNotes(s); setShowSuggestions(false); }}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400 hover:bg-accent hover:text-white transition-colors truncate max-w-[200px]"
+                    className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400 hover:bg-blue-500 hover:text-white transition-colors truncate max-w-[200px]"
                   >
                     {s}
                   </button>
@@ -264,7 +264,7 @@ export default function ExpenseModal({
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
               required
             >
               {PAYMENT_METHODS.map((m) => (
@@ -297,14 +297,14 @@ export default function ExpenseModal({
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+              className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
             >
               {saving ? "Guardando..." : editingExpense ? "Guardar" : "Agregar"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+              className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-primary dark:text-gray-300 font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
             >
               Cancelar
             </button>

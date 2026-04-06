@@ -200,7 +200,7 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl dark:shadow-gray-900/20 w-full sm:max-w-md animate-slide-up"
+        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">

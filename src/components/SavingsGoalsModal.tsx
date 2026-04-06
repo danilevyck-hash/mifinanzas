@@ -168,13 +168,13 @@ export default function SavingsGoalsModal({ isOpen, onClose }: Props) {
   const getProgressColor = (pct: number) => {
     if (pct > 80) return "bg-green-500";
     if (pct >= 50) return "bg-amber-500";
-    return "bg-accent";
+    return "bg-blue-500";
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl dark:shadow-gray-900/20 w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
+        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl  w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
@@ -207,7 +207,7 @@ export default function SavingsGoalsModal({ isOpen, onClose }: Props) {
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                        className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                         placeholder="Nombre"
                       />
                       <input
@@ -217,19 +217,19 @@ export default function SavingsGoalsModal({ isOpen, onClose }: Props) {
                         inputMode="decimal"
                         value={editTarget}
                         onChange={(e) => setEditTarget(e.target.value)}
-                        className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                        className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                         placeholder="Monto meta"
                       />
                       <input
                         type="date"
                         value={editDeadline}
                         onChange={(e) => setEditDeadline(e.target.value)}
-                        className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                        className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(goal.id)}
-                          className="flex-1 bg-accent hover:bg-accent-light text-white text-sm font-semibold py-2 rounded-xl transition-colors min-h-[40px]"
+                          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 rounded-xl transition-colors min-h-[40px]"
                         >
                           Guardar
                         </button>
@@ -298,13 +298,13 @@ export default function SavingsGoalsModal({ isOpen, onClose }: Props) {
                           inputMode="decimal"
                           value={fundsAmount}
                           onChange={(e) => setFundsAmount(e.target.value)}
-                          className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                          className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                           placeholder="Monto a agregar"
                           autoFocus
                         />
                         <button
                           onClick={() => handleAddFunds(goal.id)}
-                          className="bg-accent hover:bg-accent-light text-white text-sm font-semibold px-4 rounded-xl transition-colors min-h-[40px]"
+                          className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 rounded-xl transition-colors min-h-[40px]"
                         >
                           Agregar
                         </button>
@@ -320,7 +320,7 @@ export default function SavingsGoalsModal({ isOpen, onClose }: Props) {
                     ) : (
                       <button
                         onClick={() => { setAddingFundsId(goal.id); setFundsAmount(""); }}
-                        className="text-accent hover:text-accent-light text-xs font-medium transition-colors min-h-[36px] flex items-center"
+                        className="text-blue-500 hover:text-blue-600 text-xs font-medium transition-colors min-h-[36px] flex items-center"
                       >
                         + Agregar fondos
                       </button>
@@ -337,7 +337,7 @@ export default function SavingsGoalsModal({ isOpen, onClose }: Props) {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                     placeholder="Nombre de la meta"
                     autoFocus
                     required
@@ -349,7 +349,7 @@ export default function SavingsGoalsModal({ isOpen, onClose }: Props) {
                     inputMode="decimal"
                     value={targetAmount}
                     onChange={(e) => setTargetAmount(e.target.value)}
-                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                     placeholder="Monto meta ($)"
                     required
                   />
@@ -357,14 +357,14 @@ export default function SavingsGoalsModal({ isOpen, onClose }: Props) {
                     type="date"
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
-                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                   <p className="text-xs text-muted dark:text-gray-400">Fecha limite (opcional)</p>
                   <div className="flex gap-2">
                     <button
                       type="submit"
                       disabled={saving}
-                      className="flex-1 bg-accent hover:bg-accent-light disabled:opacity-50 text-white text-sm font-semibold py-2 rounded-xl transition-colors min-h-[40px]"
+                      className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-semibold py-2 rounded-xl transition-colors min-h-[40px]"
                     >
                       {saving ? "Creando..." : "Crear meta"}
                     </button>

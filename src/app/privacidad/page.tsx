@@ -5,7 +5,7 @@ export default function PrivacidadPage() {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       <h1 className="text-xl font-bold text-primary">Politica de Privacidad</h1>
 
-      <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4 text-sm text-gray-700 leading-relaxed">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 space-y-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
         <p className="text-muted text-xs">Ultima actualizacion: abril 2026</p>
 
         <section>
@@ -67,7 +67,7 @@ export default function PrivacidadPage() {
       </div>
 
       <div className="text-center">
-        <Link href="/" className="text-accent text-sm hover:underline">
+        <Link href="/" className="text-blue-500 text-sm hover:underline">
           Volver al inicio
         </Link>
       </div>

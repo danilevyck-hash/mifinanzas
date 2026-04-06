@@ -170,7 +170,7 @@ export default function ImportModal({ isOpen, onClose, onComplete }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={handleClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up"
+        className="bg-white rounded-t-2xl sm:rounded-2xl  w-full sm:max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
@@ -193,7 +193,7 @@ export default function ImportModal({ isOpen, onClose, onComplete }: Props) {
               type="file"
               accept=".csv"
               onChange={handleFileChange}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-base file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent-light"
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-base file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-500-light"
             />
             <p className="text-xs text-muted mt-1">
               Columnas esperadas: fecha, monto, categoria, notas, metodo_pago
@@ -243,7 +243,7 @@ export default function ImportModal({ isOpen, onClose, onComplete }: Props) {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
-                      className="bg-accent h-2 rounded-full transition-all"
+                      className="bg-blue-500 h-2 rounded-full transition-all"
                       style={{ width: `${(progress / total) * 100}%` }}
                     />
                   </div>
@@ -254,7 +254,7 @@ export default function ImportModal({ isOpen, onClose, onComplete }: Props) {
               ) : (
                 <button
                   onClick={handleImport}
-                  className="w-full bg-accent hover:bg-accent-light text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
                 >
                   Importar {parsedRows.length} gasto(s)
                 </button>
@@ -275,7 +275,7 @@ export default function ImportModal({ isOpen, onClose, onComplete }: Props) {
               )}
               <button
                 onClick={handleClose}
-                className="mt-2 bg-accent hover:bg-accent-light text-white font-semibold py-3 px-6 rounded-xl transition-colors min-h-[48px] text-base"
+                className="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors min-h-[48px] text-base"
               >
                 Cerrar
               </button>

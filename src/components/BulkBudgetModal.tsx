@@ -69,7 +69,7 @@ export default function BulkBudgetModal({ isOpen, onClose, categories, budgets, 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl dark:shadow-gray-900/20 w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
+        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl  w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
@@ -101,7 +101,7 @@ export default function BulkBudgetModal({ isOpen, onClose, categories, budgets, 
                 inputMode="decimal"
                 value={amounts[cat.name] || ""}
                 onChange={(e) => handleChange(cat.name, e.target.value)}
-                className="w-28 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-sm bg-white dark:bg-gray-800 text-primary dark:text-white text-right"
+                className="w-28 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-sm bg-white dark:bg-gray-800 text-primary dark:text-white text-right"
                 placeholder="0.00"
               />
             </div>
@@ -110,7 +110,7 @@ export default function BulkBudgetModal({ isOpen, onClose, categories, budgets, 
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+              className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
             >
               {saving ? "Guardando..." : "Guardar todo"}
             </button>

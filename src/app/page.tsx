@@ -370,10 +370,10 @@ function HomeContent() {
         <div className="text-center min-w-[180px]">
           <h1 className="text-xl font-semibold text-primary dark:text-white flex items-center justify-center">
             {MONTH_NAMES[viewMonth]} {viewYear}
-            {isCurrentMonth && <span className="inline-block w-2 h-2 bg-accent rounded-full ml-1.5 animate-pulse" />}
+            {isCurrentMonth && <span className="inline-block w-2 h-2 bg-blue-500 rounded-full ml-1.5 animate-pulse" />}
           </h1>
           {!isCurrentMonth && (
-            <button onClick={() => router.push("/")} className="text-xs text-accent hover:text-accent-light transition-colors">
+            <button onClick={() => router.push("/")} className="text-xs text-blue-500 hover:text-blue-600 transition-colors">
               Ir al mes actual
             </button>
           )}
@@ -414,7 +414,7 @@ function HomeContent() {
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 border-l-4 border-accent text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 border-l-4 border-blue-500 text-center">
           <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
           <p className="text-3xl font-bold text-primary dark:text-white mt-1">{formatCurrency(totalMonth)}</p>
           <p className="text-sm text-muted dark:text-gray-400 mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
@@ -495,7 +495,7 @@ function HomeContent() {
             Mas
           </button>
           {moreMenuOpen && (
-            <div className="absolute bottom-full mb-2 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-30 min-w-[160px]">
+            <div className="absolute bottom-full mb-2 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl  overflow-hidden z-30 min-w-[160px]">
               <button onClick={() => { setExportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Exportar</button>
               <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Importar CSV</button>
             </div>
@@ -507,7 +507,7 @@ function HomeContent() {
       <div className="space-y-3">
         {loading ? (
           <div className="bg-white dark:bg-gray-900 rounded-2xl  p-8 text-center">
-            <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
             <p className="text-muted dark:text-gray-400 text-sm">Cargando gastos...</p>
           </div>
         ) : expenses.length === 0 && categories.length === 0 ? (
@@ -516,7 +516,7 @@ function HomeContent() {
             <h2 className="text-xl font-semibold text-primary dark:text-white">Bienvenido</h2>
             <button
               onClick={() => { setEditing(null); setModalOpen(true); }}
-              className="bg-accent hover:bg-accent-light text-white font-semibold px-6 py-3 rounded-xl transition-colors mt-4 min-h-[48px]"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl transition-colors mt-4 min-h-[48px]"
             >
               Agrega tu primer gasto
             </button>
@@ -526,7 +526,7 @@ function HomeContent() {
             <p className="text-muted dark:text-gray-400">Sin gastos este mes</p>
             <button
               onClick={() => { setEditing(null); setModalOpen(true); }}
-              className="text-accent hover:text-accent-light text-sm font-medium mt-2 transition-colors"
+              className="text-blue-500 hover:text-blue-600 text-sm font-medium mt-2 transition-colors"
             >
               Agregar primer gasto
             </button>
@@ -588,7 +588,7 @@ function HomeContent() {
                   <div className="flex justify-end gap-1 mt-2 border-t border-gray-100 dark:border-gray-800 pt-2">
                     <button
                       onClick={() => { setDuplicating(e); setModalOpen(true); }}
-                      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-gray-400 hover:text-accent transition-colors"
+                      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 transition-colors"
                       title="Duplicar"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -671,7 +671,7 @@ function HomeContent() {
                           <div className="flex justify-center gap-1">
                             <button
                               onClick={() => { setDuplicating(e); setModalOpen(true); }}
-                              className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-accent hover:bg-accent/10 transition-colors"
+                              className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-blue-500 hover:bg-blue-500/10 transition-colors"
                               title="Duplicar"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -758,7 +758,7 @@ function HomeContent() {
     {/* Floating Action Button */}
     <button
       onClick={() => { setEditing(null); setModalOpen(true); }}
-      className="fixed bottom-24 sm:bottom-8 right-4 sm:right-8 z-40 w-14 h-14 bg-accent hover:bg-accent-light text-white rounded-full shadow-lg flex items-center justify-center transition-all active:scale-95"
+      className="fixed bottom-24 sm:bottom-8 right-4 sm:right-8 z-40 w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full  flex items-center justify-center transition-all active:scale-95"
       aria-label="Nuevo Gasto"
     >
       <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

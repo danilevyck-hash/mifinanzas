@@ -14,7 +14,7 @@ export function KPISkeleton() {
 
 export function CategorySkeleton() {
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
+    <div className="bg-white rounded-2xl  p-5 space-y-4">
       <div className="h-5 w-32 bg-gray-200 rounded animate-pulse" />
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="space-y-2">

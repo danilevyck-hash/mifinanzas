@@ -240,7 +240,7 @@ export default function ResumenPage() {
       <div className="flex items-center justify-center gap-3">
         <select value={selectedYear}
           onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setExpandedMonth(null); setCompareA(""); setCompareB(""); }}
-          className="border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-primary dark:text-white font-medium focus:ring-2 focus:ring-accent outline-none bg-white dark:bg-gray-800 text-base min-h-[48px]">
+          className="border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-primary dark:text-white font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 text-base min-h-[48px]">
           {years.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
       </div>
@@ -250,15 +250,15 @@ export default function ResumenPage() {
         <div>
           {totalIncome > 0 ? (
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-4 text-center border-l-4 border-green-500">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 text-center">
                 <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Ingresos</p>
                 <p className="text-lg font-bold text-green-600 dark:text-green-400 mt-1">{formatCurrency(totalIncome)}</p>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-4 text-center border-l-4 border-red-500">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 text-center">
                 <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Gastos</p>
                 <p className="text-lg font-bold text-red-600 dark:text-red-400 mt-1">{formatCurrency(yearTotal)}</p>
               </div>
-              <div className={`bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-4 text-center border-l-4 ${balance >= 0 ? "border-blue-500" : "border-red-500"}`}>
+              <div className={`bg-white dark:bg-gray-900 rounded-2xl p-4 text-center`}>
                 <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Balance</p>
                 <p className={`text-lg font-bold mt-1 ${balance >= 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}>
                   {formatCurrency(balance)}
@@ -266,7 +266,7 @@ export default function ResumenPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-4 text-center">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 text-center">
               <p className="text-sm text-muted dark:text-gray-400">Registra tus ingresos para ver el balance</p>
             </div>
           )}
@@ -274,7 +274,7 @@ export default function ResumenPage() {
       )}
 
       {/* Year total card */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5 border-l-4 border-accent text-center">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 text-center">
         <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Total {selectedYear}</p>
         <p className="text-3xl font-bold text-primary dark:text-white mt-1">{formatCurrency(yearTotal)}</p>
         <p className="text-sm text-muted dark:text-gray-400 mt-1">{yearCount} gasto{yearCount !== 1 ? "s" : ""}</p>
@@ -282,7 +282,7 @@ export default function ResumenPage() {
 
       {/* Monthly bar chart */}
       {!loading && yearCount > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-4">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4">
           <p className="text-sm font-medium text-muted dark:text-gray-400 mb-3">Gastos por Mes</p>
           <div style={{ width: "100%", height: 250 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -318,7 +318,7 @@ export default function ResumenPage() {
 
       {/* Weekly summary */}
       {!loading && yearCount > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-4 space-y-3">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 space-y-3">
           <p className="text-sm font-medium text-muted dark:text-gray-400">Resumen Semanal</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-surface dark:bg-gray-800 rounded-xl p-3 text-center">
@@ -339,7 +339,7 @@ export default function ResumenPage() {
 
       {/* Payment method breakdown (year) */}
       {!loading && yearMethods.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-4 space-y-3">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 space-y-3">
           <p className="text-sm font-medium text-muted dark:text-gray-400">Por Metodo de Pago</p>
           <div className="grid grid-cols-2 gap-3">
             {yearMethods.map((m) => (
@@ -355,19 +355,19 @@ export default function ResumenPage() {
 
       {loading ? (
         <div className="text-center py-12">
-          <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
           <p className="text-muted dark:text-gray-400 text-sm">Cargando...</p>
         </div>
       ) : (
         <div className="space-y-3">
           {monthlyData.map((month) => (
-            <div key={month.idx} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 overflow-hidden">
+            <div key={month.idx} className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
               <button
                 onClick={() => setExpandedMonth(expandedMonth === month.idx ? null : month.idx)}
                 className="w-full p-4 flex items-center justify-between hover:bg-surface dark:hover:bg-gray-800 transition-colors min-h-[64px]">
                 <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span className="text-accent font-bold text-sm">{String(month.idx + 1).padStart(2, "0")}</span>
+                  <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <span className="text-blue-500 font-bold text-sm">{String(month.idx + 1).padStart(2, "0")}</span>
                   </div>
                   <div className="text-left">
                     <p className="font-semibold text-primary dark:text-white text-sm sm:text-base">{month.name}</p>
@@ -380,7 +380,7 @@ export default function ResumenPage() {
                     {yearTotal > 0 && <p className="text-xs text-muted dark:text-gray-400">{((month.total / yearTotal) * 100).toFixed(0)}%</p>}
                   </div>
                   <div className="w-16 sm:w-20 bg-gray-100 dark:bg-gray-700 rounded-full h-2 hidden sm:block">
-                    <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${(month.total / maxMonthTotal) * 100}%` }} />
+                    <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${(month.total / maxMonthTotal) * 100}%` }} />
                   </div>
                   <svg xmlns="http://www.w3.org/2000/svg"
                     className={`h-5 w-5 text-muted dark:text-gray-400 transition-transform duration-200 flex-shrink-0 ${expandedMonth === month.idx ? "rotate-180" : ""}`}
@@ -429,7 +429,7 @@ export default function ResumenPage() {
                   </div>
                   <button
                     onClick={() => router.push(`/?month=${month.idx}&year=${selectedYear}`)}
-                    className="w-full text-center text-sm text-accent hover:text-accent-light font-medium py-3 transition-colors min-h-[44px]">
+                    className="w-full text-center text-sm text-blue-500 hover:text-blue-600 font-medium py-3 transition-colors min-h-[44px]">
                     Ver gastos de {month.name} &rarr;
                   </button>
                 </div>
@@ -441,13 +441,13 @@ export default function ResumenPage() {
 
       {/* Month comparison */}
       {!loading && monthsWithData.length >= 2 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-4 space-y-4">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 space-y-4">
           <p className="text-sm font-medium text-muted dark:text-gray-400">Comparar Meses</p>
           <div className="grid grid-cols-2 gap-3">
             <select
               value={compareA}
               onChange={(e) => setCompareA(e.target.value === "" ? "" : parseInt(e.target.value))}
-              className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 text-primary dark:text-white text-sm focus:ring-2 focus:ring-accent outline-none bg-white dark:bg-gray-800 min-h-[48px]">
+              className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 text-primary dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 min-h-[48px]">
               <option value="">Mes A</option>
               {monthsWithData.map((idx) => (
                 <option key={idx} value={idx}>{MONTH_NAMES[idx]}</option>
@@ -456,7 +456,7 @@ export default function ResumenPage() {
             <select
               value={compareB}
               onChange={(e) => setCompareB(e.target.value === "" ? "" : parseInt(e.target.value))}
-              className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 text-primary dark:text-white text-sm focus:ring-2 focus:ring-accent outline-none bg-white dark:bg-gray-800 min-h-[48px]">
+              className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 text-primary dark:text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 min-h-[48px]">
               <option value="">Mes B</option>
               {monthsWithData.map((idx) => (
                 <option key={idx} value={idx}>{MONTH_NAMES[idx]}</option>

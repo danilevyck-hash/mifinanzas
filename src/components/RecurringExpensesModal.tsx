@@ -125,7 +125,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up"
+        className="bg-white rounded-t-2xl sm:rounded-2xl  w-full sm:max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
@@ -170,7 +170,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
                   <button
                     onClick={() => handleToggle(item)}
                     className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors ${
-                      item.is_active ? "text-accent" : "text-gray-300"
+                      item.is_active ? "text-blue-500" : "text-gray-300"
                     }`}
                     title={item.is_active ? "Desactivar" : "Activar"}
                   >
@@ -207,7 +207,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
                     inputMode="decimal"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base"
                     placeholder="0.00"
                     required
                   />
@@ -220,7 +220,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
                     max="31"
                     value={dayOfMonth}
                     onChange={(e) => setDayOfMonth(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base"
                     required
                   />
                 </div>
@@ -230,7 +230,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white transition-shadow text-base"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-shadow text-base"
                   required
                 >
                   {categories.map((c) => (
@@ -243,7 +243,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white transition-shadow text-base"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-shadow text-base"
                   required
                 >
                   {PAYMENT_METHODS.map((m) => (
@@ -257,7 +257,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base"
                   placeholder="Descripcion..."
                 />
               </div>
@@ -265,7 +265,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
                 >
                   {saving ? "Guardando..." : "Agregar"}
                 </button>
@@ -281,7 +281,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
           ) : (
             <button
               onClick={() => { setShowForm(true); setCategory(categories.length > 0 ? categories[0].name : ""); }}
-              className="w-full bg-accent hover:bg-accent-light text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
             >
               + Agregar gasto recurrente
             </button>

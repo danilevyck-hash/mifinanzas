@@ -38,7 +38,7 @@ function LoginContent() {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 w-full max-w-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm overflow-hidden">
         <div className="bg-primary p-6 text-center">
           <h1 className="text-2xl font-bold text-white">MiFinanzas</h1>
           <p className="text-accent-light text-sm mt-1">Control de gastos personales</p>
@@ -60,7 +60,7 @@ function LoginContent() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="Ingresa tu usuario"
               required
               autoFocus
@@ -73,7 +73,7 @@ function LoginContent() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
                 placeholder="Ingresa tu contraseña"
                 required
               />
@@ -99,13 +99,13 @@ function LoginContent() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors"
+            className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors"
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
         <div className="px-6 pb-5 text-center">
-          <a href="/registro" className="text-sm text-accent hover:underline">
+          <a href="/registro" className="text-sm text-blue-500 hover:underline">
             No tienes cuenta? Registrate
           </a>
         </div>

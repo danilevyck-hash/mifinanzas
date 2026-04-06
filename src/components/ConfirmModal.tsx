@@ -14,7 +14,7 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm animate-slide-up"
+        className="bg-white rounded-t-2xl sm:rounded-2xl  w-full sm:max-w-sm animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 text-center space-y-3">

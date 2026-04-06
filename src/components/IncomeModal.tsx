@@ -81,7 +81,7 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl dark:shadow-gray-900/20 w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
+        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl  w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
@@ -104,7 +104,7 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               required
             />
           </div>
@@ -116,7 +116,7 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="0.00"
               required
             />
@@ -131,7 +131,7 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
                   onClick={() => setSource(s)}
                   className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
                     source === s
-                      ? "bg-accent text-white"
+                      ? "bg-blue-500 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
@@ -143,7 +143,7 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
               type="text"
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder={isPreset ? source : "Ej: Salario, Freelance, Alquiler..."}
               required
             />
@@ -154,7 +154,7 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="Descripcion del ingreso..."
             />
           </div>
@@ -166,7 +166,7 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
                 onChange={(e) => setIsRecurring(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
             </label>
             <span className="text-sm font-medium text-primary dark:text-white">Ingreso recurrente</span>
           </div>
@@ -174,7 +174,7 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+              className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
             >
               {saving ? "Guardando..." : editingIncome ? "Guardar" : "Agregar"}
             </button>

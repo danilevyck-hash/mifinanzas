@@ -115,7 +115,7 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl dark:shadow-gray-900/20 w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
+        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl  w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
@@ -136,7 +136,7 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
                 {/* Color swatch */}
                 <button
                   onClick={() => setShowColorPicker(showColorPicker === cat.id ? null : cat.id)}
-                  className="w-8 h-8 rounded-full shrink-0 border-2 border-white dark:border-gray-600 shadow-sm transition-transform hover:scale-110"
+                  className="w-8 h-8 rounded-full shrink-0 border-2 border-white dark:border-gray-600  transition-transform hover:scale-110"
                   style={{ backgroundColor: editColors[cat.id] || cat.color }}
                 />
                 {/* Icon */}
@@ -150,12 +150,12 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
                   type="text"
                   value={editNames[cat.id] || ""}
                   onChange={(e) => setEditNames((prev) => ({ ...prev, [cat.id]: e.target.value }))}
-                  className="flex-1 min-w-0 text-sm font-medium text-primary dark:text-white bg-transparent border-b border-transparent focus:border-accent outline-none px-1 py-0.5"
+                  className="flex-1 min-w-0 text-sm font-medium text-primary dark:text-white bg-transparent border-b border-transparent focus:border-blue-500 outline-none px-1 py-0.5"
                 />
                 <button
                   onClick={() => handleSave(cat.id)}
                   disabled={savingId === cat.id}
-                  className="bg-accent hover:bg-accent-light disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors min-h-[32px]"
+                  className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors min-h-[32px]"
                 >
                   {savingId === cat.id ? "..." : "Guardar"}
                 </button>
@@ -202,7 +202,7 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
                         setShowIconPicker(null);
                       }}
                       className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ${
-                        editIcons[cat.id] === emoji ? "bg-gray-200 dark:bg-gray-600 ring-2 ring-accent" : "bg-white dark:bg-gray-700"
+                        editIcons[cat.id] === emoji ? "bg-gray-200 dark:bg-gray-600 ring-2 ring-blue-500" : "bg-white dark:bg-gray-700"
                       }`}
                     >
                       {emoji}
@@ -221,13 +221,13 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddCategory(); } }}
-                className="flex-1 min-w-0 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                className="flex-1 min-w-0 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Nueva categoria..."
               />
               <button
                 onClick={handleAddCategory}
                 disabled={addingCat || !newCatName.trim()}
-                className="bg-accent hover:bg-accent-light disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors min-h-[40px]"
+                className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors min-h-[40px]"
               >
                 {addingCat ? "..." : "Agregar"}
               </button>

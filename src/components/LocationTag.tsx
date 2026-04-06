@@ -64,7 +64,7 @@ export default function LocationTag({ onLocation, existingLat, existingLng }: Pr
           type="button"
           onClick={handleGetLocation}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs text-muted dark:text-gray-400 hover:text-accent dark:hover:text-accent transition-colors min-h-[36px]"
+          className="flex items-center gap-1.5 text-xs text-muted dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-500 transition-colors min-h-[36px]"
         >
           {loading ? (
             <>
