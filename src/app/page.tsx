@@ -57,7 +57,9 @@ function HomeContent() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
-  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const [expandedCat, setExpandedCat] = useState<string | null>(null);
+  const [fabVisible, setFabVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
   const viewMonthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
   const dateFrom = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
@@ -324,17 +326,16 @@ function HomeContent() {
     }
   }, [confettiShown, hasBudgets, loading, isCurrentMonth, daysPassed, spentPct, expenses.length]);
 
-  // Close more menu when clicking outside
+  // FAB hide on scroll down, show on scroll up
   useEffect(() => {
-    if (!moreMenuOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
-        setMoreMenuOpen(false);
-      }
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      setFabVisible(currentY < lastScrollY.current || currentY < 100);
+      lastScrollY.current = currentY;
     };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [moreMenuOpen]);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const filteredExpenses = useMemo(() => {
     if (!searchQuery.trim()) return expenses;
@@ -385,6 +386,8 @@ function HomeContent() {
     router.push(`/?month=${m}&year=${y}`);
   };
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
   if (!user) return null;
 
   return (
@@ -423,64 +426,76 @@ function HomeContent() {
         </button>
       </div>
 
-      {/* Budget KPIs — Pulso del mes */}
+      {/* Budget KPIs + vs mes anterior — unified card */}
       {loading ? (
         <KPISkeleton />
       ) : hasBudgets ? (
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4">
-            <p className="text-xs text-[#8E8E93] uppercase tracking-wider">Gastado</p>
-            <p className="text-[28px] font-semibold text-primary dark:text-white mt-1 leading-tight tabular-nums">{formatCurrency(totalMonth)}</p>
-            <p className={`text-xs mt-1 ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-[#8E8E93]"}`}>
-              {Math.round(spentPct)}% del presupuesto
-            </p>
-          </div>
-          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4">
-            <p className="text-xs text-[#8E8E93] uppercase tracking-wider">Disponible</p>
-            <p className={`text-[28px] font-semibold mt-1 leading-tight tabular-nums ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
-              {available < 0 ? `-${formatCurrency(Math.abs(available))}` : formatCurrency(available)}
-            </p>
-            {isCurrentMonth && (
-              <p className="text-xs text-[#8E8E93] mt-1">
-                {daysRemaining === 0 ? "ultimo dia del mes" : `quedan ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}`}
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-2">
+            <div className="p-4">
+              <p className="text-[11px] text-[#8E8E93] uppercase">Gastado</p>
+              <p className={`text-[28px] font-semibold mt-1 leading-tight tabular-nums ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-primary dark:text-white"}`}>{formatCurrency(totalMonth)}</p>
+              <p className="text-[11px] text-[#8E8E93] mt-1">
+                de {formatCurrency(budgetTotal)} · {expenses.length} gasto{expenses.length !== 1 ? "s" : ""}
               </p>
-            )}
+            </div>
+            <div className="p-4 border-l border-[#C6C6C8]/20 dark:border-gray-800">
+              <p className="text-[11px] text-[#8E8E93] uppercase">Disponible</p>
+              <p className={`text-[28px] font-semibold mt-1 leading-tight tabular-nums ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
+                {available < 0 ? `-${formatCurrency(Math.abs(available))}` : formatCurrency(available)}
+              </p>
+              {isCurrentMonth && (
+                <p className="text-[11px] text-[#8E8E93] mt-1">
+                  {daysRemaining === 0 ? "ultimo dia del mes" : `quedan ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}`}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-5 text-center">
-          <p className="text-xs text-[#8E8E93] uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
-          <p className="text-3xl font-bold text-primary dark:text-white mt-1 tabular-nums">{formatCurrency(totalMonth)}</p>
-          <p className="text-sm text-[#8E8E93] mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
-        </div>
-      )}
-
-      {/* vs mes anterior — compact */}
-      {prevMonthData.hasData && prevMonthData.total >= 50 && (
-        <div className="bg-white dark:bg-[#1C1C1E] rounded-xl px-4 py-2.5 flex items-center justify-between">
-          <span className="text-xs text-[#8E8E93]">vs. mes anterior</span>
-          {(() => {
+          {prevMonthData.hasData && prevMonthData.total >= 50 && (() => {
             const diff = totalMonth - prevMonthData.total;
             const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
             const isMore = diff > 0;
             return (
-              <span className={`text-sm font-semibold ${isMore ? "text-red-500" : "text-green-500"}`}>
-                {isMore ? "+" : ""}{Math.round(changePct)}% ({isMore ? `+${formatCurrency(diff)}` : `-${formatCurrency(Math.abs(diff))}`})
-              </span>
+              <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between">
+                <span className="text-[13px] text-[#8E8E93]">vs. mes anterior</span>
+                <span className={`text-[13px] font-semibold ${isMore ? "text-red-500" : "text-green-500"}`}>
+                  {isMore ? "+" : ""}{Math.round(changePct)}% ({isMore ? `+${formatCurrency(diff)}` : `-${formatCurrency(Math.abs(diff))}`})
+                </span>
+              </div>
+            );
+          })()}
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
+          <div className="p-5 text-center">
+            <p className="text-[11px] text-[#8E8E93] uppercase">Total {MONTH_NAMES[viewMonth]}</p>
+            <p className="text-3xl font-bold text-primary dark:text-white mt-1 tabular-nums">{formatCurrency(totalMonth)}</p>
+            <p className="text-[11px] text-[#8E8E93] mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
+          </div>
+          {prevMonthData.hasData && prevMonthData.total >= 50 && (() => {
+            const diff = totalMonth - prevMonthData.total;
+            const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
+            const isMore = diff > 0;
+            return (
+              <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between">
+                <span className="text-[13px] text-[#8E8E93]">vs. mes anterior</span>
+                <span className={`text-[13px] font-semibold ${isMore ? "text-red-500" : "text-green-500"}`}>
+                  {isMore ? "+" : ""}{Math.round(changePct)}% ({isMore ? `+${formatCurrency(diff)}` : `-${formatCurrency(Math.abs(diff))}`})
+                </span>
+              </div>
             );
           })()}
         </div>
       )}
 
-      {/* Category breakdown — Apple Storage style */}
+      {/* Category breakdown — collapsible cells */}
       {loading ? (
         <CategorySkeleton />
       ) : categoryData.length > 0 ? (
         <div>
           <p className="text-[13px] font-medium text-[#8E8E93] uppercase px-1 mb-2">Por Categoria</p>
-          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-5">
-          <div className="space-y-4">
-            {sortedCategoryData.map((cat) => {
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl px-4">
+            {sortedCategoryData.map((cat, idx) => {
               const budget = budgetMap[cat.name];
               const hasBudget = budget != null && budget > 0;
               const budgetPct = hasBudget ? (cat.total / budget) * 100 : 0;
@@ -488,33 +503,35 @@ function HomeContent() {
               const remaining = hasBudget ? budget - cat.total : 0;
 
               return (
-                <div key={cat.name} className={!hasBudget ? "opacity-60" : ""}>
-                  <div className="flex items-center justify-between text-sm mb-1 gap-2">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                      <span className="font-medium text-primary dark:text-white">{iconMap[cat.name] || getCategoryIcon(cat.name)} {cat.name}</span>
-                    </div>
-                    <span className="text-muted dark:text-gray-400 text-xs truncate ml-2">
-                      {hasBudget ? `${formatCurrency(cat.total)} / ${formatCurrency(budget)}` : formatCurrency(cat.total)}
-                    </span>
-                  </div>
-                  {hasBudget ? (
-                    <>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }} />
+                <div key={cat.name} className={idx > 0 ? "border-t border-[#C6C6C8]/20 dark:border-gray-800 ml-6 -mx-0" : ""}>
+                  <div className={idx > 0 ? "-ml-6" : ""}>
+                    <button
+                      onClick={() => setExpandedCat(expandedCat === cat.name ? null : cat.name)}
+                      className="w-full flex items-center justify-between py-2.5"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                        <span className="text-[15px] text-primary dark:text-white">{iconMap[cat.name] || getCategoryIcon(cat.name)} {cat.name}</span>
                       </div>
-                      <p className={`text-xs mt-1 ${budgetPct >= 100 ? "text-red-500" : budgetPct >= 80 ? "text-amber-500" : "text-gray-500 dark:text-gray-400"}`}>
-                        {budgetPct >= 100 ? `${formatCurrency(Math.abs(remaining))} por encima` : budgetPct >= 80 ? `Cuidado — quedan ${formatCurrency(remaining)}` : `Te quedan ${formatCurrency(remaining)}`}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Sin presupuesto</p>
-                  )}
+                      <span className="text-[15px] tabular-nums text-primary dark:text-white">{formatCurrency(cat.total)}</span>
+                    </button>
+                    {expandedCat === cat.name && hasBudget && (
+                      <div className="pb-2 animate-fade-in">
+                        <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-full h-1.5 overflow-hidden mb-1">
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }} />
+                        </div>
+                        <p className="text-[11px] text-[#8E8E93]">
+                          {formatCurrency(cat.total)} de {formatCurrency(budget)} — {budgetPct >= 100 ? "por encima" : `quedan ${formatCurrency(remaining)}`}
+                        </p>
+                      </div>
+                    )}
+                    {expandedCat === cat.name && !hasBudget && (
+                      <p className="text-[11px] text-[#8E8E93] pb-2 animate-fade-in">Sin limite configurado</p>
+                    )}
+                  </div>
                 </div>
               );
             })}
-          </div>
           </div>
         </div>
       ) : null}
@@ -526,16 +543,7 @@ function HomeContent() {
           <button onClick={() => setShowSearch(!showSearch)} className="text-[15px] text-[#007AFF]">
             {showSearch ? "Cerrar" : "Buscar"}
           </button>
-          <div className="relative" ref={moreMenuRef}>
-            <button onClick={() => setMoreMenuOpen(!moreMenuOpen)} className="text-[15px] text-[#007AFF]">Mas</button>
-            {moreMenuOpen && (
-              <div className="absolute bottom-full mb-2 right-0 bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden z-30 min-w-[180px]" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.12)" }}>
-                <button onClick={() => { setExportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-[15px] hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Exportar</button>
-                <div className="border-t border-[#C6C6C8]/30 dark:border-gray-700/50 ml-4" />
-                <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-[15px] hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Importar CSV</button>
-              </div>
-            )}
-          </div>
+          <button onClick={() => setMoreMenuOpen(!moreMenuOpen)} className="text-[15px] text-[#007AFF]">Mas</button>
         </div>
       </div>
 
@@ -590,7 +598,7 @@ function HomeContent() {
               {visibleGroups.map((group) => (
                 <div key={group.date}>
                   <p className="text-[13px] font-medium text-[#8E8E93] uppercase px-1 mb-1.5">
-                    {formatDate(group.date)} · {formatCurrency(group.total)}
+                    {group.date === todayStr ? "Hoy" : formatDate(group.date)} · {formatCurrency(group.total)}
                   </p>
                   <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
                     {group.items.map((e, i) => (
@@ -655,7 +663,7 @@ function HomeContent() {
                       <React.Fragment key={group.date}>
                         <tr className="bg-gray-50 dark:bg-gray-800">
                           <td colSpan={6} className="px-3 py-2 text-xs font-medium text-muted dark:text-gray-400 uppercase">
-                            {formatDate(group.date)} — {formatCurrency(group.total)}
+                            {group.date === todayStr ? "Hoy" : formatDate(group.date)} — {formatCurrency(group.total)}
                           </td>
                         </tr>
                         {group.items.map((e, i) => (
@@ -761,10 +769,30 @@ function HomeContent() {
       <Confetti show={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>
 
+    {/* Action sheet for "Mas" menu */}
+    {moreMenuOpen && (
+      <>
+        <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setMoreMenuOpen(false)} />
+        <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-8 animate-slide-up">
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
+            <button onClick={() => { setExportOpen(true); setMoreMenuOpen(false); }}
+              className="w-full py-3.5 text-[17px] text-[#007AFF] font-medium">Exportar</button>
+            <div className="border-t border-[#C6C6C8]/30 dark:border-gray-700/50" />
+            <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }}
+              className="w-full py-3.5 text-[17px] text-[#007AFF] font-medium">Importar CSV</button>
+          </div>
+          <button onClick={() => setMoreMenuOpen(false)}
+            className="w-full mt-2 bg-white dark:bg-[#1C1C1E] rounded-2xl py-3.5 text-[17px] text-[#007AFF] font-semibold">
+            Cancelar
+          </button>
+        </div>
+      </>
+    )}
+
     {/* Floating Action Button */}
     <button
       onClick={() => { setEditing(null); setModalOpen(true); }}
-      className="fixed bottom-24 sm:bottom-8 right-5 sm:right-8 z-40 w-14 h-14 bg-[#007AFF] text-white rounded-full flex items-center justify-center transition-all active:scale-90"
+      className={`fixed bottom-24 sm:bottom-8 right-5 sm:right-8 z-40 w-14 h-14 bg-[#007AFF] text-white rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 ${fabVisible ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0 pointer-events-none"}`}
       style={{ boxShadow: "0 4px 16px rgba(0,122,255,0.4)" }}
       aria-label="Nuevo Gasto"
     >

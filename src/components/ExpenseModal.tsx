@@ -36,6 +36,7 @@ export default function ExpenseModal({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>(undefined);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const todayStr = new Date().toISOString().split("T")[0];
   const yesterdayDate = new Date();
@@ -100,6 +101,12 @@ export default function ExpenseModal({
       setReceiptUrl(undefined);
     }
     setShowSuggestions(false);
+    // Auto-expand details when editing
+    if (editingExpense) {
+      setShowDetails(true);
+    } else {
+      setShowDetails(false);
+    }
   }, [editingExpense, isOpen, categories, defaultCategory, defaultPaymentMethod, todayStr]);
 
   if (!isOpen) return null;
@@ -161,28 +168,7 @@ export default function ExpenseModal({
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Fecha</label>
-            <div className="flex gap-2 mb-1.5">
-              <button type="button" onClick={() => setDate(todayStr)} className={dateShortcutClass(todayStr)}>
-                Hoy
-              </button>
-              <button type="button" onClick={() => setDate(yesterdayStr)} className={dateShortcutClass(yesterdayStr)}>
-                Ayer
-              </button>
-              <button type="button" onClick={() => setDate(dayBeforeStr)} className={dateShortcutClass(dayBeforeStr)}>
-                Anteayer
-              </button>
-            </div>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
-              required
-            />
-            <p className="text-xs text-muted dark:text-gray-400 mt-0.5">Formato: DD/MM/AAAA</p>
-          </div>
+          {/* Monto - always visible, first field */}
           <div>
             <label className="block text-sm font-medium text-primary dark:text-white mb-1">Monto ($)</label>
             <input
@@ -193,9 +179,12 @@ export default function ExpenseModal({
               onChange={(e) => setAmount(e.target.value)}
               className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="0.00"
+              autoFocus
               required
             />
           </div>
+
+          {/* Categoria - always visible */}
           <div>
             <label className="block text-sm font-medium text-primary dark:text-white mb-1">Categoria</label>
             {categories.length > 0 ? (
@@ -216,64 +205,96 @@ export default function ExpenseModal({
               <p className="text-[11px] text-[#8E8E93] mt-0.5">Ultima categoria usada</p>
             )}
           </div>
-          <div className="relative">
-            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Notas</label>
-            <input
-              ref={notesRef}
-              type="text"
-              value={notes}
-              onChange={(e) => { setNotes(e.target.value); setShowSuggestions(true); }}
-              onFocus={() => setShowSuggestions(true)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
-              placeholder="Descripcion del gasto..."
-            />
-            {showSuggestions && filteredSuggestions.length > 0 && (
-              <div
-                ref={suggestionsRef}
-                className="flex flex-wrap gap-1.5 mt-1.5"
-              >
-                {filteredSuggestions.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => { setNotes(s); setShowSuggestions(false); }}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400 hover:bg-blue-500 hover:text-white transition-colors truncate max-w-[200px]"
-                  >
-                    {s}
+
+          {/* Toggle for more details */}
+          <button type="button" onClick={() => setShowDetails(!showDetails)}
+            className="w-full py-2 text-[15px] text-[#007AFF] font-medium">
+            {showDetails ? "Menos detalles" : "Mas detalles"}
+          </button>
+
+          {/* Expandable details section */}
+          {showDetails && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-primary dark:text-white mb-1">Fecha</label>
+                <div className="flex gap-2 mb-1.5">
+                  <button type="button" onClick={() => setDate(todayStr)} className={dateShortcutClass(todayStr)}>
+                    Hoy
                   </button>
-                ))}
+                  <button type="button" onClick={() => setDate(yesterdayStr)} className={dateShortcutClass(yesterdayStr)}>
+                    Ayer
+                  </button>
+                  <button type="button" onClick={() => setDate(dayBeforeStr)} className={dateShortcutClass(dayBeforeStr)}>
+                    Anteayer
+                  </button>
+                </div>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+                  required
+                />
+                <p className="text-xs text-muted dark:text-gray-400 mt-0.5">Formato: DD/MM/AAAA</p>
               </div>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Metodo de Pago</label>
-            <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
-              required
-            >
-              {PAYMENT_METHODS.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <ReceiptCapture
-            onCapture={(url) => setReceiptUrl(url)}
-            onScanResult={(result) => {
-              if (result.amount && !amount) setAmount(result.amount.toString());
-              if (result.category) {
-                const match = categories.find((c) => c.name.toLowerCase() === result.category.toLowerCase());
-                if (match) setCategory(match.name);
-              }
-              if (result.notes && !notes) setNotes(result.notes);
-            }}
-            existingUrl={receiptUrl}
-            onRemove={() => setReceiptUrl(undefined)}
-            onViewFull={(url) => setViewingReceipt(url)}
-          />
-
-
+              <div className="relative">
+                <label className="block text-sm font-medium text-primary dark:text-white mb-1">Notas</label>
+                <input
+                  ref={notesRef}
+                  type="text"
+                  value={notes}
+                  onChange={(e) => { setNotes(e.target.value); setShowSuggestions(true); }}
+                  onFocus={() => setShowSuggestions(true)}
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+                  placeholder="Descripcion del gasto..."
+                />
+                {showSuggestions && filteredSuggestions.length > 0 && (
+                  <div
+                    ref={suggestionsRef}
+                    className="flex flex-wrap gap-1.5 mt-1.5"
+                  >
+                    {filteredSuggestions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => { setNotes(s); setShowSuggestions(false); }}
+                        className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400 hover:bg-blue-500 hover:text-white transition-colors truncate max-w-[200px]"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary dark:text-white mb-1">Metodo de Pago</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
+                  required
+                >
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <ReceiptCapture
+                onCapture={(url) => setReceiptUrl(url)}
+                onScanResult={(result) => {
+                  if (result.amount && !amount) setAmount(result.amount.toString());
+                  if (result.category) {
+                    const match = categories.find((c) => c.name.toLowerCase() === result.category.toLowerCase());
+                    if (match) setCategory(match.name);
+                  }
+                  if (result.notes && !notes) setNotes(result.notes);
+                }}
+                existingUrl={receiptUrl}
+                onRemove={() => setReceiptUrl(undefined)}
+                onViewFull={(url) => setViewingReceipt(url)}
+              />
+            </div>
+          )}
         </div>
       </form>
 

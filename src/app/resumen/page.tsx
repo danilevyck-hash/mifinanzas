@@ -111,10 +111,7 @@ export default function ResumenPage() {
     return map;
   }, [categories]);
 
-  const years = useMemo(() => {
-    const curr = new Date().getFullYear();
-    return [curr, curr - 1, curr - 2];
-  }, []);
+  // (years dropdown replaced by stepper)
 
   const monthlyData = useMemo(() => {
     return MONTH_NAMES.map((name, idx) => {
@@ -237,12 +234,21 @@ export default function ResumenPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-center gap-3">
-        <select value={selectedYear}
-          onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setExpandedMonth(null); setCompareA(""); setCompareB(""); }}
-          className="border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-primary dark:text-white font-medium focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 text-base min-h-[48px]">
-          {years.map((y) => <option key={y} value={y}>{y}</option>)}
-        </select>
+      {/* Headline total */}
+      <div>
+        <p className="text-[28px] font-bold text-primary dark:text-white text-center tabular-nums">
+          {formatCurrency(yearTotal)}
+        </p>
+        <p className="text-[13px] text-[#8E8E93] text-center mt-1">Total {selectedYear}</p>
+      </div>
+
+      {/* Year stepper */}
+      <div className="flex items-center justify-center gap-3 mb-4">
+        <button onClick={() => { setSelectedYear(y => y - 1); setExpandedMonth(null); setCompareA(""); setCompareB(""); }}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#1C1C1E] text-[#007AFF] text-lg font-semibold">&larr;</button>
+        <span className="text-[17px] font-semibold text-primary dark:text-white min-w-[60px] text-center">{selectedYear}</span>
+        <button onClick={() => { setSelectedYear(y => y + 1); setExpandedMonth(null); setCompareA(""); setCompareB(""); }}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#1C1C1E] text-[#007AFF] text-lg font-semibold">&rarr;</button>
       </div>
 
       {/* Balance: Income vs Expenses */}
@@ -250,39 +256,32 @@ export default function ResumenPage() {
         <div>
           {totalIncome > 0 ? (
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 text-center">
-                <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Ingresos</p>
+              <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 text-center shadow-none">
+                <p className="text-xs text-[#8E8E93] uppercase tracking-wider">Ingresos</p>
                 <p className="text-lg font-bold text-green-600 dark:text-green-400 mt-1">{formatCurrency(totalIncome)}</p>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 text-center">
-                <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Gastos</p>
+              <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 text-center shadow-none">
+                <p className="text-xs text-[#8E8E93] uppercase tracking-wider">Gastos</p>
                 <p className="text-lg font-bold text-red-600 dark:text-red-400 mt-1">{formatCurrency(yearTotal)}</p>
               </div>
-              <div className={`bg-white dark:bg-gray-900 rounded-2xl p-4 text-center`}>
-                <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Balance</p>
-                <p className={`text-lg font-bold mt-1 ${balance >= 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}>
+              <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 text-center shadow-none">
+                <p className="text-xs text-[#8E8E93] uppercase tracking-wider">Balance</p>
+                <p className={`text-lg font-bold mt-1 ${balance >= 0 ? "text-[#007AFF]" : "text-red-600 dark:text-red-400"}`}>
                   {formatCurrency(balance)}
                 </p>
               </div>
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 text-center">
-              <p className="text-sm text-muted dark:text-gray-400">Registra tus ingresos para ver el balance</p>
+            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 text-center shadow-none">
+              <p className="text-sm text-[#8E8E93]">Registra tus ingresos para ver el balance</p>
             </div>
           )}
         </div>
       )}
 
-      {/* Year total card */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 text-center">
-        <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Total {selectedYear}</p>
-        <p className="text-3xl font-bold text-primary dark:text-white mt-1">{formatCurrency(yearTotal)}</p>
-        <p className="text-sm text-muted dark:text-gray-400 mt-1">{yearCount} gasto{yearCount !== 1 ? "s" : ""}</p>
-      </div>
-
       {/* Monthly bar chart */}
       {!loading && yearCount > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4">
           <p className="text-sm font-medium text-muted dark:text-gray-400 mb-3">Gastos por Mes</p>
           <div style={{ width: "100%", height: 250 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -318,7 +317,7 @@ export default function ResumenPage() {
 
       {/* Weekly summary */}
       {!loading && yearCount > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 space-y-3">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
           <p className="text-sm font-medium text-muted dark:text-gray-400">Resumen Semanal</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-surface dark:bg-gray-800 rounded-xl p-3 text-center">
@@ -339,7 +338,7 @@ export default function ResumenPage() {
 
       {/* Payment method breakdown (year) */}
       {!loading && yearMethods.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 space-y-3">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
           <p className="text-sm font-medium text-muted dark:text-gray-400">Por Metodo de Pago</p>
           <div className="grid grid-cols-2 gap-3">
             {yearMethods.map((m) => (
@@ -361,7 +360,7 @@ export default function ResumenPage() {
       ) : (
         <div className="space-y-3">
           {monthlyData.map((month) => (
-            <div key={month.idx} className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
+            <div key={month.idx} className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
               <button
                 onClick={() => setExpandedMonth(expandedMonth === month.idx ? null : month.idx)}
                 className="w-full p-4 flex items-center justify-between hover:bg-surface dark:hover:bg-gray-800 transition-colors min-h-[64px]">
@@ -441,7 +440,7 @@ export default function ResumenPage() {
 
       {/* Month comparison */}
       {!loading && monthsWithData.length >= 2 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 space-y-4">
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 space-y-4">
           <p className="text-sm font-medium text-muted dark:text-gray-400">Comparar Meses</p>
           <div className="grid grid-cols-2 gap-3">
             <select

@@ -15,6 +15,8 @@ export default function RegistroPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [step, setStep] = useState(1);
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   useEffect(() => {
     if (!username.trim() || username.length < 3) { setUsernameAvailable(null); return; }
@@ -95,7 +97,7 @@ export default function RegistroPage() {
       <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm overflow-hidden">
         <div className="bg-primary p-6 text-center">
           <h1 className="text-2xl font-bold text-white">MiFinanzas</h1>
-          <p className="text-accent-light text-sm mt-1">Crear cuenta</p>
+          <p className="text-accent-light text-sm mt-1">{step === 1 ? "Crear cuenta" : "Elige tu usuario"}</p>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
@@ -103,91 +105,117 @@ export default function RegistroPage() {
               {error}
             </div>
           )}
-          <div>
-            <label className="block text-sm font-medium text-primary mb-1">Nombre</label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-              placeholder="Tu nombre"
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-primary mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-              placeholder="tu@email.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-primary mb-1">Usuario</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-              placeholder="Elige un usuario"
-            />
-            {usernameAvailable === true && username.length >= 3 && (
-              <p className="text-[11px] text-green-500 mt-0.5">Usuario disponible</p>
-            )}
-            {usernameAvailable === false && (
-              <p className="text-[11px] text-red-500 mt-0.5">Este usuario ya existe</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-primary mb-1">Contrasena</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-                placeholder="Minimo 8 caracteres"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
-                tabIndex={-1}
-              >
-                {showPassword ? eyeOffIcon : eyeIcon}
+
+          {step === 1 && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Nombre</label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                  placeholder="Tu nombre"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                  placeholder="tu@email.com"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-[13px] text-[#8E8E93]">
+                <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300" />
+                Acepto la <a href="/privacidad" className="text-[#007AFF] underline">politica de privacidad</a>
+              </label>
+              <button type="button" onClick={() => {
+                if (!displayName.trim()) { setError("Nombre requerido"); return; }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("Email invalido"); return; }
+                if (!acceptTerms) { setError("Acepta los terminos"); return; }
+                setError(""); setStep(2);
+              }}
+                className="w-full bg-[#007AFF] hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors">
+                Continuar
               </button>
-            </div>
-            <p className="text-[11px] text-[#8E8E93] mt-0.5">Minimo 8 caracteres. Usa mayusculas y numeros para mayor seguridad.</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-primary mb-1">Confirmar Contrasena</label>
-            <div className="relative">
-              <input
-                type={showConfirm ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-                placeholder="Repite la contrasena"
-              />
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <button type="button" onClick={() => setStep(1)} className="text-[15px] text-[#007AFF] mb-2">&larr; Volver</button>
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Usuario</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                  placeholder="Elige un usuario"
+                  autoFocus
+                />
+                {usernameAvailable === true && username.length >= 3 && (
+                  <p className="text-[11px] text-green-500 mt-0.5">Usuario disponible</p>
+                )}
+                {usernameAvailable === false && (
+                  <p className="text-[11px] text-red-500 mt-0.5">Este usuario ya existe</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Contrasena</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                    placeholder="Minimo 8 caracteres"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? eyeOffIcon : eyeIcon}
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#8E8E93] mt-0.5">Minimo 8 caracteres. Usa mayusculas y numeros para mayor seguridad.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Confirmar Contrasena</label>
+                <div className="relative">
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                    placeholder="Repite la contrasena"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showConfirm ? eyeOffIcon : eyeIcon}
+                  </button>
+                </div>
+              </div>
               <button
-                type="button"
-                onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
-                tabIndex={-1}
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#007AFF] hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors"
               >
-                {showConfirm ? eyeOffIcon : eyeIcon}
+                {loading ? "Creando cuenta..." : "Crear Cuenta"}
               </button>
-            </div>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors"
-          >
-            {loading ? "Creando cuenta..." : "Crear Cuenta"}
-          </button>
+            </>
+          )}
         </form>
         <div className="px-6 pb-5 text-center">
           <a href="/login" className="text-sm text-blue-500 hover:underline">
