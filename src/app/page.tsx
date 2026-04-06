@@ -321,7 +321,7 @@ function HomeContent() {
             <p className="text-xs text-gray-500 uppercase tracking-wider">Gastado</p>
             <p className="text-2xl font-semibold text-primary mt-1">{formatCurrency(totalMonth)}</p>
             <p className={`text-xs mt-1 ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-[#1e3a5f]"}`}>
-              {Math.round(spentPct)}% del presupuesto
+              {Math.round(spentPct)}% del presupuesto · {expenses.length} gasto{expenses.length !== 1 ? "s" : ""}
             </p>
           </div>
           <div className="bg-gray-50 rounded-2xl p-4">
@@ -345,29 +345,21 @@ function HomeContent() {
             )}
           </div>
         </div>
-      ) : expenses.length > 0 ? (
-        <div className="bg-gray-50 rounded-2xl p-4 text-center">
-          <p className="text-sm text-gray-400">Configura tu presupuesto mensual para ver tus KPIs</p>
-          <button
-            onClick={() => {
-              if (categoryData.length > 0) {
-                setBudgetCategory(categoryData[0].name);
-                setBudgetModalOpen(true);
-              }
-            }}
-            className="text-accent hover:text-accent-light text-sm font-medium mt-1 transition-colors"
-          >
-            Configurar presupuesto
-          </button>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm p-5 border-l-4 border-accent text-center">
+          <p className="text-xs text-muted uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
+          <p className="text-3xl font-bold text-primary mt-1">{formatCurrency(totalMonth)}</p>
+          <p className="text-sm text-muted mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
+          {expenses.length > 0 && categoryData.length > 0 && (
+            <button
+              onClick={() => { setBudgetCategory(categoryData[0].name); setBudgetModalOpen(true); }}
+              className="text-accent hover:text-accent-light text-xs font-medium mt-2 transition-colors"
+            >
+              Configurar presupuesto para ver KPIs
+            </button>
+          )}
         </div>
-      ) : null}
-
-      {/* Total card */}
-      <div className="bg-white rounded-2xl shadow-sm p-5 border-l-4 border-accent text-center">
-        <p className="text-xs text-muted uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
-        <p className="text-3xl font-bold text-primary mt-1">{formatCurrency(totalMonth)}</p>
-        <p className="text-sm text-muted mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
-      </div>
+      )}
 
       {/* Category breakdown — Apple Storage style */}
       {categoryData.length > 0 && (
@@ -383,8 +375,8 @@ function HomeContent() {
 
               return (
                 <div key={cat.name} className={!hasBudget ? "opacity-60" : ""}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between text-sm mb-1 gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
                       <span className="font-medium text-primary">{cat.name}</span>
                       <button
@@ -398,7 +390,7 @@ function HomeContent() {
                         </svg>
                       </button>
                     </div>
-                    <span className="text-muted text-xs">
+                    <span className="text-muted text-xs truncate ml-2">
                       {hasBudget ? `${formatCurrency(cat.total)} / ${formatCurrency(budget)}` : formatCurrency(cat.total)}
                     </span>
                   </div>
@@ -464,31 +456,28 @@ function HomeContent() {
       {/* Trend KPIs */}
       {hasTrendData && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {prevMonthData.hasData ? (
-            <div className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">vs. mes anterior</p>
-              {(() => {
-                const diff = totalMonth - prevMonthData.total;
-                const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
-                const isMore = diff > 0;
-                return (
-                  <>
-                    <p className={`text-2xl font-semibold mt-1 ${isMore ? "text-red-500" : "text-green-500"}`}>
-                      {isMore ? "+" : ""}{Math.round(changePct)}%
-                    </p>
-                    <p className={`text-xs mt-1 ${isMore ? "text-red-400" : "text-green-400"}`}>
-                      {isMore ? `gastaste ${formatCurrency(diff)} mas` : `ahorraste ${formatCurrency(Math.abs(diff))}`}
-                    </p>
-                  </>
-                );
-              })()}
-            </div>
-          ) : (
-            <div className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">vs. mes anterior</p>
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">vs. mes anterior</p>
+            {!prevMonthData.hasData ? (
               <p className="text-sm text-gray-400 mt-2">Sin datos previos</p>
-            </div>
-          )}
+            ) : prevMonthData.total < 50 ? (
+              <p className="text-sm text-gray-400 mt-2">Mes anterior: {formatCurrency(prevMonthData.total)} (datos insuficientes)</p>
+            ) : (() => {
+              const diff = totalMonth - prevMonthData.total;
+              const changePct = (diff / prevMonthData.total) * 100;
+              const isMore = diff > 0;
+              return (
+                <>
+                  <p className={`text-2xl font-semibold mt-1 ${isMore ? "text-red-500" : "text-green-500"}`}>
+                    {isMore ? "+" : ""}{Math.round(changePct)}%
+                  </p>
+                  <p className={`text-xs mt-1 ${isMore ? "text-red-400" : "text-green-400"}`}>
+                    {isMore ? `gastaste ${formatCurrency(diff)} mas` : `ahorraste ${formatCurrency(Math.abs(diff))}`}
+                  </p>
+                </>
+              );
+            })()}
+          </div>
           {dominantCategory && expenses.length > 0 && (
             <div className="bg-gray-50 rounded-2xl p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wider">Categoria dominante</p>
