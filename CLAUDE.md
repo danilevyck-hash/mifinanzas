@@ -1,47 +1,117 @@
-# MiFinanzas — Finanzas Personales
+# MiFinanzas — Control de Gastos Personales
 
-App de finanzas personales para mi hermano. Registro de gastos con categorías, métodos de pago, resumen anual/mensual, y exportación.
+PWA de finanzas personales para toda Latinoamérica. Diseño estilo Apple iOS. Registro de gastos, presupuestos por categoría, gastos recurrentes, metas de ahorro, OCR de recibos, y reportes.
 
 ## Stack
 - **Framework:** Next.js 14 (App Router)
 - **Database:** Supabase (PostgreSQL)
 - **Hosting:** Vercel
 - **Styling:** Tailwind CSS
+- **Charts:** Recharts
+- **Analytics:** Vercel Analytics
 - **Excel:** exceljs
 - **PDF:** jsPDF + jspdf-autotable
-- **PWA:** Service worker registrado
+- **PWA:** Service worker con cache-first + offline support
 
 ## Módulos
 | Módulo | Ruta | Descripción |
 |--------|------|-------------|
-| Gastos | `/` | Lista por mes, cards en mobile, tabla en desktop, navegación ← mes → |
-| Resumen | `/resumen` | Resumen anual, desglose por categoría y método de pago |
-| Cuenta | `/cuenta` | Cambiar nombre, usuario, contraseña |
+| Home (Gastos) | `/` | KPIs (gastado/disponible), categorías colapsables, gastos agrupados por día, FAB flotante, action sheet |
+| Resumen | `/resumen` | Total anual, bar chart mensual, meses expandibles con categorías |
+| Config | `/cuenta` | Perfil, seguridad, categorías, presupuestos, recurrentes, metas, apariencia, moneda, fecha |
 | Login | `/login` | Login con usuario y contraseña |
+| Registro | `/registro` | Multi-step: paso 1 (nombre+email+términos), paso 2 (usuario+contraseña) |
+| Privacidad | `/privacidad` | Política de privacidad |
 
 ## Auth
 - Login con usuario/contraseña contra tabla `users` en Supabase
 - Passwords hasheados con bcrypt (auto-migración de plaintext al login)
-- Tokens de sesión HMAC-SHA256 firmados con AUTH_SECRET
-- Todas las API routes verifican token via header Authorization: Bearer
-- Ownership enforcement: usuario solo accede a sus propios datos
-- Server client: `src/lib/supabase-server.ts` (usa SUPABASE_SERVICE_ROLE_KEY)
-- Session helper: `src/lib/session.ts` (createToken, getAuthUserId)
+- Tokens de sesión HMAC-SHA256 firmados con AUTH_SECRET (7 días)
+- Rate limiting: 5 intentos / 15 min por IP
+- Registro público con categorías default (8 categorías + emojis)
+- Check de username disponible en tiempo real
+- Sesión expirada redirige a /login con toast
+- refreshUser() en AuthContext para actualizar perfil en tiempo real
+- authFetch() soporta FormData (para upload de recibos)
 
 ## Base de datos
-- Tablas: users, personal_expenses, categories
-- RLS: debe estar habilitado (sin policies = solo service_role accede)
+Tablas:
+- `users` — id (int), username, display_name, email, password (bcrypt)
+- `personal_expenses` — id, user_id, date, amount, category, notes, payment_method, receipt_url, subcategory, split_count
+- `categories` — id, user_id, name, color, icon (emoji), custom_icon
+- `category_budgets` — id (uuid), user_id, category, budget_amount, month ("YYYY-MM")
+- `recurring_expenses` — id (uuid), user_id, amount, category, notes, payment_method, day_of_month, is_active
+- `income` — id (uuid), user_id, date, amount, source, notes, is_recurring
+- `savings_goals` — id (uuid), user_id, name, target_amount, current_amount, deadline, is_active
+- `achievements` — id (uuid), user_id, type, name, earned_at
+- `user_preferences` — id (uuid), user_id (unique), last_category, last_payment_method, collapsed_sections, alerts_dismissed_date
+- `subcategories` — id (uuid), user_id, category_name, name
 
-## Design System
-- Colores: primary (#0F172A), accent (#059669 emerald), surface (#F8FAFC)
-- Bottom nav en mobile (Gastos, Resumen, Cuenta) con iconos
-- Top nav en desktop
-- Cards para gastos en mobile, tabla en desktop
-- Modales tipo bottom sheet en mobile
-- Touch targets 44px+ en todos los botones
-- Toasts para confirmaciones y errores
-- Loading spinners animados
-- Safe area padding para PWA
+Storage:
+- Bucket `receipts` (público) — fotos de recibos
+
+RLS habilitado en todas las tablas. Queries via supabaseAdmin (service_role).
+
+## API Routes
+| Ruta | Métodos | Descripción |
+|------|---------|-------------|
+| `/api/auth/login` | POST | Login + rate limiting |
+| `/api/auth/register` | POST | Registro + categorías default |
+| `/api/auth/update` | PUT, DELETE | Perfil, contraseña, eliminar cuenta |
+| `/api/auth/check-username` | GET | Disponibilidad de username |
+| `/api/personal-expenses` | GET, POST, PUT, DELETE | CRUD gastos |
+| `/api/categories` | GET, POST, PUT, DELETE | CRUD categorías (PUT = rename + migración) |
+| `/api/category-budgets` | GET, POST | Presupuestos (upsert) |
+| `/api/recurring-expenses` | GET, POST, PUT, DELETE | Gastos recurrentes |
+| `/api/recurring-expenses/apply` | POST | Aplicar recurrentes al mes |
+| `/api/income` | GET, POST, PUT, DELETE | CRUD ingresos |
+| `/api/savings-goals` | GET, POST, PUT, DELETE | Metas de ahorro |
+| `/api/achievements` | GET, POST | Logros/gamificación |
+| `/api/user-preferences` | GET, POST | Preferencias (última categoría, método) |
+| `/api/notes-suggestions` | GET | Autocomplete de notas por categoría |
+| `/api/upload-receipt` | POST | Upload foto recibo a Supabase Storage |
+| `/api/scan-receipt` | POST | OCR con Claude Vision (extrae monto+categoría) |
+
+## Design System (Apple iOS Style)
+- **Colores:** Azul Apple #007AFF, gris #8E8E93, fondo #F2F2F7, cards dark #1C1C1E, separadores #C6C6C8
+- **Navbar:** primary header (#0F172A), bottom tab bar 49px con backdrop-blur-xl
+- **Tabs:** Gastos, Resumen, Config (ícono engranaje)
+- **Cards:** bg-white dark:bg-[#1C1C1E] rounded-2xl, sin shadows
+- **Modals:** Header blanco con "Cancelar" izq + "Guardar" der (no header navy)
+- **Botones:** Texto azul #007AFF, no pills con background
+- **Toggles:** Verde Apple #34C759
+- **Inputs:** text-[16px] mínimo (previene zoom iOS), focus:ring-blue-500
+- **Animaciones:** slide-up con cubic-bezier iOS (0.32, 0.72, 0, 1), fade-in 0.15s
+- **Touch:** Sin selección de texto, sin highlight, sin double-tap zoom, active states grises
+- **FAB:** Azul #007AFF, se oculta al scroll down, active:scale-95
+- **Toasts:** Arriba (top-16), backdrop-blur-xl, rounded-2xl, auto-dismiss 3s/5s
+- **Dark mode:** Clase 'dark' en html, toggle en Config, transiciones suaves
+
+## Componentes
+| Componente | Descripción |
+|-----------|-------------|
+| ExpenseModal | Agregar/editar gasto. Monto+Categoría siempre visible, "Más detalles" expande fecha/notas/método/recibo |
+| ExportModal | Exportar a Excel/PDF con filtros de fecha |
+| BudgetModal | Presupuesto por categoría individual |
+| BulkBudgetModal | Todos los presupuestos de una vez |
+| CategoryEditorModal | Agregar, renombrar (migra gastos), cambiar color/emoji, eliminar |
+| RecurringExpensesModal | CRUD gastos recurrentes + aplicar al mes |
+| IncomeModal | Agregar/editar ingresos con fuentes predefinidas |
+| ImportModal | Importar CSV con preview y progreso |
+| SavingsGoalsModal | Metas con termómetro de progreso |
+| ConfirmModal | Confirmación Apple action sheet style |
+| ReceiptCapture | Foto de recibo + OCR automático con Claude Vision |
+| Confetti | Celebración CSS, tap para cerrar |
+| SkeletonLoader | Pulse loaders para KPIs y categorías |
+| OfflineBanner | Banner "Sin conexión" |
+| Toast | Success/error/warning/danger con iconos |
+
+## Preferencias (localStorage)
+- `mifinanzas_user` — datos del usuario
+- `mifinanzas_token` — JWT de sesión
+- `mifinanzas_theme` — "dark" | "light"
+- `mifinanzas_prefs` — { currency, dateFormat, budgetAlerts }
+- `mifinanzas_alerts_date` — fecha última alerta (1x/día)
 
 ## Deploy
 ```bash
@@ -49,7 +119,8 @@ git push origin main   # Auto-deploy via Vercel
 ```
 
 ## Env vars en Vercel
-- `AUTH_SECRET` — firma los tokens de sesión (HMAC-SHA256)
+- `AUTH_SECRET` — firma tokens HMAC-SHA256
 - `SUPABASE_SERVICE_ROLE_KEY` — service role key
-- `NEXT_PUBLIC_SUPABASE_URL` — URL del proyecto
+- `NEXT_PUBLIC_SUPABASE_URL` — URL del proyecto Supabase
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon key
+- `ANTHROPIC_API_KEY` — Claude Vision para OCR de recibos
