@@ -9,16 +9,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const isLoginPage = pathname === "/login";
+  const isPublicPage = pathname === "/login" || pathname === "/registro" || pathname === "/recuperar" || pathname === "/privacidad";
 
   useEffect(() => {
     if (loading) return;
-    if (!user && !isLoginPage) {
+    if (!user && !isPublicPage) {
       router.replace("/login");
-    } else if (user && isLoginPage) {
+    } else if (user && pathname === "/login") {
       router.replace("/");
     }
-  }, [user, loading, isLoginPage, router]);
+  }, [user, loading, isPublicPage, pathname, router]);
 
   if (loading) {
     return (
@@ -31,11 +31,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user && !isLoginPage) return null;
+  if (!user && !isPublicPage) return null;
 
   return (
     <>
-      {!isLoginPage && <Navbar />}
+      {!isPublicPage && <Navbar />}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 sm:pb-6">
         {children}
       </main>
