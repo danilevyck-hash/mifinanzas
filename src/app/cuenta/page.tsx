@@ -102,15 +102,12 @@ export default function CuentaPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const body: Record<string, string | number> = { current_password: "__profile_only__" };
+      const body: Record<string, string | number> = {};
       if (displayName !== user.display_name) body.display_name = displayName;
       if (email !== (user.email || "")) body.email = email;
 
-      // If nothing changed, skip
-      if (Object.keys(body).length <= 1) { toast("Sin cambios"); setSaving(false); return; }
+      if (Object.keys(body).length === 0) { toast("Sin cambios"); setSaving(false); return; }
 
-      // We need current password for the API but profile-only edits
-      // For now, we'll still need to validate — but let's try without password requirement for name/email
       const res = await authFetch("/api/auth/update", { method: "PUT", body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { toast(data.error || "Error al guardar", "error"); return; }

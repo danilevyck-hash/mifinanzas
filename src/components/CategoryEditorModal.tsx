@@ -27,6 +27,8 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
   const [showColorPicker, setShowColorPicker] = useState<number | null>(null);
   const [showIconPicker, setShowIconPicker] = useState<number | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [newCatName, setNewCatName] = useState("");
+  const [addingCat, setAddingCat] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -77,6 +79,39 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
     }
   };
 
+  const handleAddCategory = async () => {
+    if (!newCatName.trim()) return;
+    setAddingCat(true);
+    try {
+      const colorIdx = categories.length % DEFAULT_COLORS.length;
+      const res = await authFetch("/api/categories", {
+        method: "POST",
+        body: JSON.stringify({ name: newCatName.trim(), color: DEFAULT_COLORS[colorIdx] }),
+      });
+      if (res.ok) {
+        toast("Categoria creada");
+        setNewCatName("");
+        onUpdated();
+      } else {
+        const data = await res.json();
+        toast(data.error || "Error al crear", "error");
+      }
+    } catch { toast("Error de conexion", "error"); }
+    finally { setAddingCat(false); }
+  };
+
+  const handleDeleteCategory = async (catId: number) => {
+    if (!confirm("Eliminar esta categoria? Los gastos asociados mantendran el nombre.")) return;
+    try {
+      const res = await authFetch("/api/categories", {
+        method: "DELETE",
+        body: JSON.stringify({ id: catId }),
+      });
+      if (res.ok) { toast("Categoria eliminada"); onUpdated(); }
+      else toast("Error al eliminar", "error");
+    } catch { toast("Error de conexion", "error"); }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
@@ -84,7 +119,7 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Editar categorias</h2>
+          <h2 className="text-lg font-semibold">Categorias</h2>
           <button
             onClick={onClose}
             className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
@@ -123,6 +158,15 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
                   className="bg-accent hover:bg-accent-light disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors min-h-[32px]"
                 >
                   {savingId === cat.id ? "..." : "Guardar"}
+                </button>
+                <button
+                  onClick={() => handleDeleteCategory(cat.id)}
+                  className="text-red-400 hover:text-red-500 min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg transition-colors"
+                  title="Eliminar"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
                 </button>
               </div>
               {/* Rename note */}
@@ -168,6 +212,27 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
               )}
             </div>
           ))}
+
+          {/* Add new category */}
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddCategory(); } }}
+                className="flex-1 min-w-0 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                placeholder="Nueva categoria..."
+              />
+              <button
+                onClick={handleAddCategory}
+                disabled={addingCat || !newCatName.trim()}
+                className="bg-accent hover:bg-accent-light disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors min-h-[40px]"
+              >
+                {addingCat ? "..." : "Agregar"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

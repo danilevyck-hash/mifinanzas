@@ -22,15 +22,21 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
   }
 
-  let passwordValid = false;
-  if (user.password.startsWith("$2")) {
-    passwordValid = await bcrypt.compare(current_password, user.password);
-  } else {
-    passwordValid = user.password === current_password;
-  }
-
-  if (!passwordValid) {
-    return NextResponse.json({ error: "Contrasena actual incorrecta" }, { status: 401 });
+  // Profile-only updates (name/email) don't need password
+  const needsPassword = body.new_password || body.username;
+  if (needsPassword) {
+    if (!current_password) {
+      return NextResponse.json({ error: "Contrasena actual requerida" }, { status: 400 });
+    }
+    let passwordValid = false;
+    if (user.password.startsWith("$2")) {
+      passwordValid = await bcrypt.compare(current_password, user.password);
+    } else {
+      passwordValid = user.password === current_password;
+    }
+    if (!passwordValid) {
+      return NextResponse.json({ error: "Contrasena actual incorrecta" }, { status: 401 });
+    }
   }
 
   const updates: Record<string, string> = {};
