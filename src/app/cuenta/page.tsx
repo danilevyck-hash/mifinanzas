@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import { useTheme } from "@/lib/theme";
+import ThemeCustomizer from "@/components/ThemeCustomizer";
 
 export default function CuentaPage() {
   const { user, logout, authFetch } = useAuth();
@@ -194,6 +195,8 @@ export default function CuentaPage() {
           Cerrar Sesion
         </button>
       </div>
+
+      <ThemeCustomizer />
 
       <div className="text-center">
         <a href="/privacidad" className="text-muted text-xs hover:underline">Politica de Privacidad</a>

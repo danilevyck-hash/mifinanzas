@@ -16,6 +16,12 @@ import RecurringExpensesModal from "@/components/RecurringExpensesModal";
 import IncomeModal from "@/components/IncomeModal";
 import ImportModal from "@/components/ImportModal";
 import Confetti from "@/components/Confetti";
+import BulkBudgetModal from "@/components/BulkBudgetModal";
+import SavingsGoalsModal from "@/components/SavingsGoalsModal";
+import CategoryEditorModal from "@/components/CategoryEditorModal";
+import ShareButton from "@/components/ShareButton";
+import { usePreferences } from "@/lib/usePreferences";
+import { predictMonthEnd } from "@/lib/prediction";
 
 const DailyChart = dynamic(() => import("@/components/DailyChart"), { ssr: false });
 
@@ -32,6 +38,7 @@ function HomeContent() {
   const router = useRouter();
   const { user, authFetch } = useAuth();
   const { toast } = useToast();
+  const { prefs, updatePrefs } = usePreferences();
   const paramMonth = searchParams.get("month");
   const paramYear = searchParams.get("year");
 
@@ -64,6 +71,10 @@ function HomeContent() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [chartOpen, setChartOpen] = useState(false);
+  const [bulkBudgetOpen, setBulkBudgetOpen] = useState(false);
+  const [savingsOpen, setSavingsOpen] = useState(false);
+  const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState<PersonalExpense | null>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const viewMonthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
@@ -141,7 +152,12 @@ function HomeContent() {
       }
       setModalOpen(false);
       setEditing(null);
+      setDuplicating(null);
       toast(expense.id ? "Gasto actualizado" : "Gasto agregado");
+      // Save last used category and payment method
+      if (expense.category || expense.payment_method) {
+        updatePrefs({ last_category: expense.category, last_payment_method: expense.payment_method });
+      }
       // Check budget alert for this category after save
       if (expense.category && expense.date) {
         const expenseMonth = expense.date.substring(0, 7);
@@ -240,6 +256,7 @@ function HomeContent() {
   const available = budgetTotal - totalMonth;
   const avgDaily = daysPassed > 0 ? totalMonth / daysPassed : 0;
   const targetDaily = daysRemaining > 0 ? Math.max(available, 0) / daysRemaining : 0;
+  const predicted = isCurrentMonth ? predictMonthEnd(totalMonth, daysPassed, daysInMonth) : 0;
 
   // Feature 3 — Trends (vs previous month)
   const prevMonthData = useMemo(() => {
@@ -418,6 +435,11 @@ function HomeContent() {
                 target: {formatCurrency(targetDaily)}/dia
               </p>
             )}
+            {isCurrentMonth && predicted > 0 && (
+              <p className={`text-xs mt-0.5 ${predicted > budgetTotal ? "text-red-400" : "text-green-400"}`}>
+                A este ritmo: {formatCurrency(predicted)}
+              </p>
+            )}
           </div>
         </div>
       ) : (
@@ -436,8 +458,9 @@ function HomeContent() {
         </div>
       )}
 
-      {/* Action buttons — Exportar + Mas menu */}
+      {/* Action buttons — Exportar + Share + Mas menu */}
       <div className="flex flex-wrap justify-end gap-2">
+        <ShareButton totalMonth={totalMonth} categoryData={categoryData} month={viewMonth} year={viewYear} />
         <button onClick={() => setExportOpen(true)}
           className="bg-white dark:bg-gray-900 border-2 border-primary text-primary dark:text-white hover:bg-primary hover:text-white font-semibold px-5 py-3 rounded-xl shadow-sm dark:shadow-gray-900/20 transition-colors flex items-center gap-2 min-h-[48px]">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -458,6 +481,9 @@ function HomeContent() {
               <button onClick={() => { setRecurringOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Recurrentes</button>
               <button onClick={() => { setIncomeOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Ingresos</button>
               <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Importar CSV</button>
+              <button onClick={() => { setBulkBudgetOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Presupuestos</button>
+              <button onClick={() => { setSavingsOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Metas de Ahorro</button>
+              <button onClick={() => { setCategoryEditorOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Editar Categorias</button>
             </div>
           )}
         </div>
@@ -564,6 +590,15 @@ function HomeContent() {
                       <p className="text-xs text-muted dark:text-gray-400 mt-1">{e.payment_method}</p>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => { setDuplicating(e); setModalOpen(true); }}
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-muted dark:text-gray-400 hover:bg-surface dark:hover:bg-gray-800 transition-colors"
+                        title="Duplicar"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
                       <button
                         onClick={() => { setEditing(e); setModalOpen(true); }}
                         className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-primary dark:text-white hover:bg-surface dark:hover:bg-gray-800 transition-colors"
@@ -808,13 +843,16 @@ function HomeContent() {
       />
       <ExpenseModal
         isOpen={modalOpen}
-        onClose={() => { setModalOpen(false); setEditing(null); }}
+        onClose={() => { setModalOpen(false); setEditing(null); setDuplicating(null); }}
         onSave={handleSave}
         editingExpense={editing}
+        duplicateExpense={duplicating}
         categories={categories}
         onCategoryCreated={fetchCategories}
         userId={user.id}
         saving={saving}
+        defaultCategory={prefs.last_category}
+        defaultPaymentMethod={prefs.last_payment_method}
       />
       <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} expenses={allExpenses} categories={categories} />
       <BudgetModal
@@ -840,6 +878,24 @@ function HomeContent() {
         isOpen={importOpen}
         onClose={() => setImportOpen(false)}
         onComplete={() => { setImportOpen(false); fetchExpenses(); fetchAllExpenses(); }}
+      />
+      <BulkBudgetModal
+        isOpen={bulkBudgetOpen}
+        onClose={() => setBulkBudgetOpen(false)}
+        categories={categories}
+        budgets={budgets}
+        month={viewMonthStr}
+        onSaved={fetchBudgets}
+      />
+      <SavingsGoalsModal
+        isOpen={savingsOpen}
+        onClose={() => setSavingsOpen(false)}
+      />
+      <CategoryEditorModal
+        isOpen={categoryEditorOpen}
+        onClose={() => setCategoryEditorOpen(false)}
+        categories={categories}
+        onUpdated={fetchCategories}
       />
       <Confetti show={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>
