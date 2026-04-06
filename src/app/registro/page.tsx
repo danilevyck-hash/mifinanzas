@@ -24,6 +24,11 @@ export default function RegistroPage() {
       return;
     }
 
+    if (!email.trim() || !email.includes("@")) {
+      setError("El email es requerido");
+      return;
+    }
+
     if (!username.trim()) {
       setError("El usuario es requerido");
       return;
@@ -44,7 +49,7 @@ export default function RegistroPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: displayName, username, password, email: email || undefined }),
+        body: JSON.stringify({ display_name: displayName, username, password, email }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -97,7 +102,7 @@ export default function RegistroPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">Email (opcional)</label>
+            <label className="block text-sm font-medium text-primary mb-1">Email</label>
             <input
               type="email"
               value={email}
