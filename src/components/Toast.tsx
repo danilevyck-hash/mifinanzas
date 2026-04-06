@@ -45,7 +45,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.slice(-3).map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg animate-slide-up flex items-center gap-2 ${toastColor(t.type)}`}
+            className={`pointer-events-auto rounded-2xl px-4 py-3 text-[15px] font-medium text-white backdrop-blur-xl animate-slide-up flex items-center gap-2 ${toastColor(t.type)}`}
           >
             {t.type === "success" && (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

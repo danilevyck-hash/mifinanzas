@@ -200,19 +200,13 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md animate-slide-up"
+        className="bg-white dark:bg-[#1C1C1E] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Exportar Gastos</h2>
-          <button
-            onClick={onClose}
-            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        <div className="flex items-center justify-between p-4 border-b border-[#C6C6C8]/30 dark:border-gray-700/50">
+          <button onClick={onClose} className="text-[17px] text-[#007AFF] min-w-[70px] text-left">Cancelar</button>
+          <h2 className="text-[17px] font-semibold text-primary dark:text-white">Exportar Gastos</h2>
+          <div className="min-w-[70px]" />
         </div>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-2">

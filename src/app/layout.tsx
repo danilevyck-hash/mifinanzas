@@ -52,7 +52,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="bg-surface dark:bg-gray-950 min-h-screen">
+      <body className="bg-[#F2F2F7] dark:bg-black min-h-screen">
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>

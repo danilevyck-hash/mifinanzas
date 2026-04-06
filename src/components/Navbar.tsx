@@ -35,7 +35,7 @@ export default function Navbar() {
                 <Link
                   href="/"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] flex items-center ${
-                    pathname === "/" ? "bg-blue-500 text-white" : "text-accent-light hover:bg-blue-500/20"
+                    pathname === "/" ? "bg-[#007AFF] text-white" : "text-accent-light hover:bg-[#007AFF]/20"
                   }`}
                 >
                   Home
@@ -43,7 +43,7 @@ export default function Navbar() {
                 <Link
                   href="/resumen"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] flex items-center ${
-                    pathname === "/resumen" ? "bg-blue-500 text-white" : "text-accent-light hover:bg-blue-500/20"
+                    pathname === "/resumen" ? "bg-[#007AFF] text-white" : "text-accent-light hover:bg-[#007AFF]/20"
                   }`}
                 >
                   Resumen
@@ -92,12 +92,12 @@ export default function Navbar() {
       </nav>
 
       {/* Bottom nav - mobile only */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 pb-safe">
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-[#C6C6C8] dark:border-gray-800 z-50 pb-safe">
         <div className="flex items-center justify-around h-16">
           <Link
             href="/"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${
-              pathname === "/" ? "text-blue-500" : "text-gray-400"
+              pathname === "/" ? "text-[#007AFF]" : "text-[#8E8E93]"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,7 +108,7 @@ export default function Navbar() {
           <Link
             href="/resumen"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${
-              pathname === "/resumen" ? "text-blue-500" : "text-gray-400"
+              pathname === "/resumen" ? "text-[#007AFF]" : "text-[#8E8E93]"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,7 +119,7 @@ export default function Navbar() {
           <Link
             href="/cuenta"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${
-              pathname === "/cuenta" ? "text-blue-500" : "text-gray-400"
+              pathname === "/cuenta" ? "text-[#007AFF]" : "text-[#8E8E93]"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -355,7 +355,7 @@ function HomeContent() {
 
   return (
     <>
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Month navigation */}
       <div className="flex items-center justify-center gap-2">
         <button
@@ -394,37 +394,37 @@ function HomeContent() {
         <KPISkeleton />
       ) : hasBudgets ? (
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200/60 dark:border-gray-700/60 rounded-2xl p-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gastado</p>
-            <p className="text-[28px] font-semibold text-primary dark:text-white mt-1 leading-tight">{formatCurrency(totalMonth)}</p>
-            <p className={`text-xs mt-1 ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-gray-500 dark:text-gray-400"}`}>
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4">
+            <p className="text-xs text-[#8E8E93] uppercase tracking-wider">Gastado</p>
+            <p className="text-[28px] font-semibold text-primary dark:text-white mt-1 leading-tight tabular-nums">{formatCurrency(totalMonth)}</p>
+            <p className={`text-xs mt-1 ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-[#8E8E93]"}`}>
               {Math.round(spentPct)}% del presupuesto
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-900 border border-gray-200/60 dark:border-gray-700/60 rounded-2xl p-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Disponible</p>
-            <p className={`text-[28px] font-semibold mt-1 leading-tight ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4">
+            <p className="text-xs text-[#8E8E93] uppercase tracking-wider">Disponible</p>
+            <p className={`text-[28px] font-semibold mt-1 leading-tight tabular-nums ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
               {available < 0 ? `-${formatCurrency(Math.abs(available))}` : formatCurrency(available)}
             </p>
             {isCurrentMonth && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-[#8E8E93] mt-1">
                 {daysRemaining === 0 ? "ultimo dia del mes" : `quedan ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}`}
               </p>
             )}
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 border-l-4 border-blue-500 text-center">
-          <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
-          <p className="text-3xl font-bold text-primary dark:text-white mt-1">{formatCurrency(totalMonth)}</p>
-          <p className="text-sm text-muted dark:text-gray-400 mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-5 text-center">
+          <p className="text-xs text-[#8E8E93] uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
+          <p className="text-3xl font-bold text-primary dark:text-white mt-1 tabular-nums">{formatCurrency(totalMonth)}</p>
+          <p className="text-sm text-[#8E8E93] mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
         </div>
       )}
 
       {/* vs mes anterior — compact */}
       {prevMonthData.hasData && prevMonthData.total >= 50 && (
-        <div className="border border-gray-200/60 dark:border-gray-700/60 rounded-xl px-4 py-2 flex items-center justify-between">
-          <span className="text-xs text-muted dark:text-gray-400">vs. mes anterior</span>
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-xl px-4 py-2.5 flex items-center justify-between">
+          <span className="text-xs text-[#8E8E93]">vs. mes anterior</span>
           {(() => {
             const diff = totalMonth - prevMonthData.total;
             const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
@@ -442,8 +442,9 @@ function HomeContent() {
       {loading ? (
         <CategorySkeleton />
       ) : categoryData.length > 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-5">
-          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Por Categoria</h2>
+        <div>
+          <p className="text-[13px] font-medium text-[#8E8E93] uppercase px-1 mb-2">Por Categoria</p>
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-5">
           <div className="space-y-4">
             {sortedCategoryData.map((cat) => {
               const budget = budgetMap[cat.name];
@@ -480,53 +481,51 @@ function HomeContent() {
               );
             })}
           </div>
+          </div>
         </div>
       ) : null}
 
       {/* Action buttons */}
-      <div className="flex justify-end gap-4">
-        <button onClick={() => setExportOpen(true)}
-          className="text-blue-500 text-sm font-medium min-h-[44px] transition-colors hover:text-blue-600">
-          Exportar
-        </button>
-        <div className="relative" ref={moreMenuRef}>
-          <button onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-            className="text-blue-500 text-sm font-medium min-h-[44px] transition-colors hover:text-blue-600">
-            Mas
+      <div className="flex items-center justify-between px-1">
+        <p className="text-[13px] font-medium text-[#8E8E93] uppercase">Gastos</p>
+        <div className="flex gap-4">
+          <button onClick={() => setShowSearch(!showSearch)} className="text-[15px] text-[#007AFF]">
+            {showSearch ? "Cerrar" : "Buscar"}
           </button>
-          {moreMenuOpen && (
-            <div className="absolute bottom-full mb-2 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl  overflow-hidden z-30 min-w-[160px]">
-              <button onClick={() => { setExportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Exportar</button>
-              <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Importar CSV</button>
-            </div>
-          )}
+          <div className="relative" ref={moreMenuRef}>
+            <button onClick={() => setMoreMenuOpen(!moreMenuOpen)} className="text-[15px] text-[#007AFF]">Mas</button>
+            {moreMenuOpen && (
+              <div className="absolute bottom-full mb-2 right-0 bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden z-30 min-w-[180px]" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.12)" }}>
+                <button onClick={() => { setExportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-[15px] hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Exportar</button>
+                <div className="border-t border-[#C6C6C8]/30 dark:border-gray-700/50 ml-4" />
+                <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-[15px] hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Importar CSV</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Expense list */}
       <div className="space-y-3">
         {loading ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl  p-8 text-center">
-            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            <p className="text-muted dark:text-gray-400 text-sm">Cargando gastos...</p>
+          <div className="flex justify-center py-8">
+            <svg className="animate-spin h-6 w-6 text-[#8E8E93]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
           </div>
         ) : expenses.length === 0 && categories.length === 0 ? (
           /* Onboarding banner for first-time users */
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 text-center">
-            <h2 className="text-xl font-semibold text-primary dark:text-white">Bienvenido</h2>
-            <button
-              onClick={() => { setEditing(null); setModalOpen(true); }}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl transition-colors mt-4 min-h-[48px]"
-            >
-              Agrega tu primer gasto
-            </button>
+          <div className="text-center py-12">
+            <p className="text-[17px] font-semibold text-primary dark:text-white">Bienvenido</p>
+            <p className="text-[15px] text-[#8E8E93] mt-1">Agrega tu primer gasto</p>
           </div>
         ) : expenses.length === 0 ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl  p-8 text-center">
-            <p className="text-muted dark:text-gray-400">Sin gastos este mes</p>
+          <div className="text-center py-12">
+            <p className="text-[15px] text-[#8E8E93]">Sin gastos este mes</p>
             <button
               onClick={() => { setEditing(null); setModalOpen(true); }}
-              className="text-blue-500 hover:text-blue-600 text-sm font-medium mt-2 transition-colors"
+              className="text-[15px] text-[#007AFF] font-medium mt-2 transition-colors"
             >
               Agregar primer gasto
             </button>
@@ -534,103 +533,77 @@ function HomeContent() {
         ) : (
           <>
             {/* Collapsible search and filter bar */}
-            {expenses.length >= 2 && (
-              <div className="space-y-2">
-                <button onClick={() => setShowSearch(!showSearch)} className="flex items-center gap-1.5 text-sm text-muted dark:text-gray-400 hover:text-primary dark:hover:text-white transition-colors min-h-[44px] px-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  Filtrar
-                </button>
-                {showSearch && (
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Buscar notas, categoria, metodo..."
-                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow text-sm bg-white dark:bg-gray-900"
-                  />
-                )}
+            {showSearch && (
+              <div className="px-1 pb-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar gastos..."
+                  className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-xl px-4 py-2 text-[15px] text-primary dark:text-white placeholder:text-[#8E8E93] outline-none"
+                />
               </div>
             )}
 
             {filteredExpenses.length === 0 ? (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl  p-8 text-center">
-                <p className="text-muted dark:text-gray-400">Sin resultados para este filtro</p>
+              <div className="text-center py-8">
+                <p className="text-[15px] text-[#8E8E93]">Sin resultados para este filtro</p>
               </div>
             ) : (
             <>
             {/* Mobile cards */}
             <div className="sm:hidden space-y-4">
               {visibleGroups.map((group) => (
-                <div key={group.date} className="space-y-1.5">
-                  <div className="flex items-center justify-between px-1">
-                    <p className="text-xs font-medium text-muted dark:text-gray-400 uppercase">
-                      {formatDate(group.date)}
-                    </p>
-                    <p className="text-xs font-semibold text-primary dark:text-white">
-                      {formatCurrency(group.total)}
-                    </p>
+                <div key={group.date}>
+                  <p className="text-[13px] font-medium text-[#8E8E93] uppercase px-1 mb-1.5">
+                    {formatDate(group.date)} · {formatCurrency(group.total)}
+                  </p>
+                  <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
+                    {group.items.map((e, i) => (
+                      <React.Fragment key={e.id}>
+                        {i > 0 && <div className="border-t border-[#C6C6C8]/30 dark:border-gray-700/50 ml-14" />}
+                        <div
+                          className={`flex items-center py-3 px-4 active:bg-gray-100 dark:active:bg-gray-800 transition-colors cursor-pointer ${deletingId === e.id ? "opacity-50" : ""}`}
+                          onClick={() => { setEditing(e); setModalOpen(true); }}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[15px] text-primary dark:text-white">{iconMap[e.category] || getCategoryIcon(e.category)} {e.category}</p>
+                            {e.notes && <p className="text-[13px] text-[#8E8E93] truncate">{e.notes}</p>}
+                          </div>
+                          <div className="text-right flex-shrink-0 ml-3">
+                            <p className="text-[15px] font-semibold text-primary dark:text-white tabular-nums">{formatCurrency(e.amount)}</p>
+                            <p className="text-[11px] text-[#8E8E93]">{e.payment_method}</p>
+                          </div>
+                          <button
+                            onClick={(ev) => { ev.stopPropagation(); setDuplicating(e); setModalOpen(true); }}
+                            className="ml-1 p-1 text-[#C7C7CC] hover:text-[#007AFF] transition-colors flex-shrink-0"
+                            title="Duplicar"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                          <svg className="h-4 w-4 text-[#C7C7CC] ml-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </React.Fragment>
+                    ))}
                   </div>
-                  {group.items.map((e) => (
-                <div key={e.id} className={`bg-white dark:bg-gray-900 rounded-xl p-4 ${deletingId === e.id ? "opacity-50" : ""}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-primary dark:text-white">
-                        <span className="mr-1">{iconMap[e.category] || getCategoryIcon(e.category)}</span>
-                        {e.category}
-                      </p>
-                      {e.notes && <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">{e.notes}</p>}
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{e.payment_method}</p>
-                    </div>
-                    <div className="flex items-start gap-2 flex-shrink-0">
-                      <p className="text-lg font-bold text-primary dark:text-white text-right">{formatCurrency(e.amount)}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-1 mt-2 border-t border-gray-100 dark:border-gray-800 pt-2">
-                    <button
-                      onClick={() => { setDuplicating(e); setModalOpen(true); }}
-                      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 transition-colors"
-                      title="Duplicar"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => { setEditing(e); setModalOpen(true); }}
-                      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-gray-400 hover:text-primary dark:hover:text-white transition-colors"
-                      title="Editar"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteId(e.id)}
-                      disabled={deletingId === e.id}
-                      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50"
-                      title="Eliminar"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                  ))}
                 </div>
               ))}
               {hasMoreDays && (
                 <button
                   onClick={() => setVisibleDays((v) => v + 5)}
-                  className="w-full py-2 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors"
+                  className="w-full py-3 text-[15px] text-[#007AFF] font-medium"
                 >
-                  Ver mas dias ({groupedExpenses.length - visibleDays} restantes)
+                  Ver mas ({groupedExpenses.length - visibleDays} dias)
                 </button>
               )}
             </div>
 
             {/* Desktop table */}
-            <div className="hidden sm:block bg-white dark:bg-gray-900 rounded-2xl  overflow-hidden">
+            <div className="hidden sm:block bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -709,9 +682,9 @@ function HomeContent() {
               {hasMoreDays && (
                 <button
                   onClick={() => setVisibleDays((v) => v + 5)}
-                  className="w-full py-2 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors"
+                  className="w-full py-3 text-[15px] text-[#007AFF] font-medium"
                 >
-                  Ver mas dias ({groupedExpenses.length - visibleDays} restantes)
+                  Ver mas ({groupedExpenses.length - visibleDays} dias)
                 </button>
               )}
             </div>
@@ -757,11 +730,12 @@ function HomeContent() {
 
     {/* Floating Action Button */}
     <button
-      onClick={() => { setEditing(null); setModalOpen(true); }}
-      className="fixed bottom-24 sm:bottom-8 right-4 sm:right-8 z-40 w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full  flex items-center justify-center transition-all active:scale-95"
+      onClick={() => { setEditing(null); setDuplicating(null); setModalOpen(true); }}
+      className="fixed bottom-24 sm:bottom-8 right-5 sm:right-8 z-40 w-14 h-14 bg-[#007AFF] text-white rounded-full flex items-center justify-center transition-all active:scale-90"
+      style={{ boxShadow: "0 4px 16px rgba(0,122,255,0.4)" }}
       aria-label="Nuevo Gasto"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
       </svg>
     </button>

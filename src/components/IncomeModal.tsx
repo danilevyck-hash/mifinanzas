@@ -80,24 +80,21 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
-      <div
-        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl  w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white dark:bg-[#1C1C1E] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
-          <h2 className="text-lg font-semibold">
+        <div className="flex items-center justify-between p-4 border-b border-[#C6C6C8]/30 dark:border-gray-700/50">
+          <button type="button" onClick={onClose} className="text-[17px] text-[#007AFF] min-w-[70px] text-left">Cancelar</button>
+          <h2 className="text-[17px] font-semibold text-primary dark:text-white">
             {editingIncome ? "Editar Ingreso" : "Nuevo Ingreso"}
           </h2>
-          <button
-            onClick={onClose}
-            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button type="submit" disabled={saving} className="text-[17px] text-[#007AFF] font-semibold min-w-[70px] text-right disabled:opacity-50">
+            {saving ? "..." : "Guardar"}
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <div className="p-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-primary dark:text-white mb-1">Fecha</label>
             <input
@@ -170,24 +167,8 @@ export default function IncomeModal({ isOpen, onClose, onSave, editingIncome }: 
             </label>
             <span className="text-sm font-medium text-primary dark:text-white">Ingreso recurrente</span>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
-            >
-              {saving ? "Guardando..." : editingIncome ? "Guardar" : "Agregar"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }
