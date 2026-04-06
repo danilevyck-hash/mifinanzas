@@ -2,20 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  touch-action: manipulation;
+}
+
+html {
+  scroll-behavior: smooth;
+  overscroll-behavior-y: none;
+}
+
 body {
   font-family: system-ui, -apple-system, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overflow-x: hidden;
+  position: relative;
   @apply bg-[#F2F2F7] dark:bg-black;
 }
 
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 @keyframes slide-up {
-  0% { opacity: 0; transform: translateY(12px) scale(0.95); }
-  70% { transform: translateY(0) scale(1.02); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .animate-slide-up {
-  animation: slide-up 0.25s ease-out;
+  animation: slide-up 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @keyframes fade-in {
@@ -24,7 +42,7 @@ body {
 }
 
 .animate-fade-in {
-  animation: fade-in 0.2s ease-out;
+  animation: fade-in 0.15s ease-out;
 }
 
 @keyframes slide-left {
@@ -66,4 +84,8 @@ html.transitioning * {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
+}
+
+.touch-pan-y {
+  touch-action: pan-y;
 }

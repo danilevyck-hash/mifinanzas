@@ -84,7 +84,7 @@ export default function Navbar() {
 
       {/* Bottom nav - mobile only */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-[#C6C6C8] dark:border-gray-800 z-50 pb-safe">
-        <div className="flex items-center justify-around h-16">
+        <div className="flex items-center justify-around h-[49px]">
           <Link
             href="/"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${

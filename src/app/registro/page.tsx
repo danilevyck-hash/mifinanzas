@@ -93,7 +93,7 @@ export default function RegistroPage() {
   );
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center">
+    <div className="min-h-[calc(100vh-120px)] flex items-center justify-center">
       <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm overflow-hidden">
         <div className="bg-primary p-6 text-center">
           <h1 className="text-2xl font-bold text-white">MiFinanzas</h1>
@@ -114,7 +114,7 @@ export default function RegistroPage() {
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[16px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
                   placeholder="Tu nombre"
                   autoFocus
                 />
@@ -125,7 +125,7 @@ export default function RegistroPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[16px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
                   placeholder="tu@email.com"
                 />
               </div>
@@ -155,7 +155,7 @@ export default function RegistroPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[16px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
                   placeholder="Elige un usuario"
                   autoFocus
                 />
@@ -173,7 +173,7 @@ export default function RegistroPage() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 text-[16px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
                     placeholder="Minimo 8 caracteres"
                   />
                   <button
@@ -194,7 +194,7 @@ export default function RegistroPage() {
                     type={showConfirm ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 text-[16px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
                     placeholder="Repite la contrasena"
                   />
                   <button

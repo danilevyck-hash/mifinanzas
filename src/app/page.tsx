@@ -507,7 +507,7 @@ function HomeContent() {
                   <div className={idx > 0 ? "-ml-6" : ""}>
                     <button
                       onClick={() => setExpandedCat(expandedCat === cat.name ? null : cat.name)}
-                      className="w-full flex items-center justify-between py-2.5"
+                      className="w-full flex items-center justify-between py-2.5 active:bg-[#E5E5EA]/50 dark:active:bg-gray-800/50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
@@ -559,11 +559,21 @@ function HomeContent() {
         ) : expenses.length === 0 && categories.length === 0 ? (
           /* Onboarding banner for first-time users */
           <div className="text-center py-12">
+            <div className="w-16 h-16 bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="h-8 w-8 text-[#8E8E93]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+              </svg>
+            </div>
             <p className="text-[17px] font-semibold text-primary dark:text-white">Bienvenido</p>
             <p className="text-[15px] text-[#8E8E93] mt-1">Agrega tu primer gasto</p>
           </div>
         ) : expenses.length === 0 ? (
           <div className="text-center py-12">
+            <div className="w-16 h-16 bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="h-8 w-8 text-[#8E8E93]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+              </svg>
+            </div>
             <p className="text-[15px] text-[#8E8E93]">Sin gastos este mes</p>
             <button
               onClick={() => { setEditing(null); setModalOpen(true); }}
@@ -582,7 +592,7 @@ function HomeContent() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Buscar gastos..."
-                  className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-xl px-4 py-2 text-[15px] text-primary dark:text-white placeholder:text-[#8E8E93] outline-none"
+                  className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-xl px-4 py-2 text-[16px] text-primary dark:text-white placeholder:text-[#8E8E93] outline-none"
                 />
               </div>
             )}
@@ -605,7 +615,7 @@ function HomeContent() {
                       <React.Fragment key={e.id}>
                         {i > 0 && <div className="border-t border-[#C6C6C8]/30 dark:border-gray-700/50 ml-14" />}
                         <div
-                          className={`flex items-center py-3 px-4 active:bg-gray-100 dark:active:bg-gray-800 transition-colors cursor-pointer ${deletingId === e.id ? "opacity-50" : ""}`}
+                          className={`flex items-center py-3 px-4 active:bg-[#E5E5EA]/50 dark:active:bg-gray-800/50 transition-colors cursor-pointer ${deletingId === e.id ? "opacity-50" : ""}`}
                           onClick={() => { setEditing(e); setModalOpen(true); }}
                         >
                           <div className="flex-1 min-w-0">
@@ -772,7 +782,7 @@ function HomeContent() {
     {/* Action sheet for "Mas" menu */}
     {moreMenuOpen && (
       <>
-        <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setMoreMenuOpen(false)} />
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setMoreMenuOpen(false)} />
         <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-8 animate-slide-up">
           <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
             <button onClick={() => { setExportOpen(true); setMoreMenuOpen(false); }}
@@ -792,7 +802,7 @@ function HomeContent() {
     {/* Floating Action Button */}
     <button
       onClick={() => { setEditing(null); setModalOpen(true); }}
-      className={`fixed bottom-24 sm:bottom-8 right-5 sm:right-8 z-40 w-14 h-14 bg-[#007AFF] text-white rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 ${fabVisible ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0 pointer-events-none"}`}
+      className={`fixed bottom-20 sm:bottom-8 right-5 sm:right-8 z-40 w-14 h-14 bg-[#007AFF] text-white rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${fabVisible ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0 pointer-events-none"}`}
       style={{ boxShadow: "0 4px 16px rgba(0,122,255,0.4)" }}
       aria-label="Nuevo Gasto"
     >

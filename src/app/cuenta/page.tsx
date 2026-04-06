@@ -122,7 +122,7 @@ export default function CuentaPage() {
     finally { setSaving(false); }
   };
 
-  const inputCls = "w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none";
+  const inputCls = "w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-[16px] bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-blue-500 outline-none";
 
   const Cell = ({ label, value, onClick, destructive, toggle: toggleVal, onToggle }: {
     label: string; value?: string; onClick?: () => void; destructive?: boolean;
@@ -312,13 +312,13 @@ export default function CuentaPage() {
 
       {/* Delete dialog */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
           <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl w-full sm:max-w-sm mx-4 mb-4 sm:mb-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 text-center">
               <h3 className="text-[17px] font-semibold text-primary dark:text-white">Eliminar cuenta</h3>
               <p className="text-[13px] text-[#8E8E93] mt-2">Ingresa tu contrasena para confirmar</p>
               <input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)}
-                className="w-full mt-3 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-[15px] bg-white dark:bg-[#2C2C2E] text-primary dark:text-white text-center focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full mt-3 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-[16px] bg-white dark:bg-[#2C2C2E] text-primary dark:text-white text-center focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Tu contrasena" />
             </div>
             <div className="border-t border-[#C6C6C8]/30 dark:border-gray-700/50">

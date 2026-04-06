@@ -38,7 +38,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center">
+    <div className="min-h-[calc(100vh-120px)] flex items-center justify-center">
       <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm overflow-hidden">
         <div className="bg-primary p-6 text-center">
           <h1 className="text-2xl font-bold text-white">MiFinanzas</h1>
@@ -66,7 +66,7 @@ function LoginContent() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-[16px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="Ingresa tu usuario"
               required
               autoFocus
@@ -79,7 +79,7 @@ function LoginContent() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 pr-11 text-[16px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
                 placeholder="Ingresa tu contraseña"
                 required
               />
