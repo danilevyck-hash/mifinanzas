@@ -9,7 +9,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const isPublicPage = pathname === "/login" || pathname === "/registro" || pathname === "/recuperar" || pathname === "/privacidad";
+  const isPublicPage = pathname === "/login" || pathname === "/registro" || pathname === "/privacidad";
 
   useEffect(() => {
     if (loading) return;

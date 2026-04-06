@@ -11,7 +11,7 @@ import BulkBudgetModal from "@/components/BulkBudgetModal";
 import RecurringExpensesModal from "@/components/RecurringExpensesModal";
 import SavingsGoalsModal from "@/components/SavingsGoalsModal";
 
-type ExpandableSection = "perfil" | "perfil_edit" | "seguridad" | "apariencia" | "moneda" | "formato_fecha" | "alertas" | "reporte" | "acerca" | null;
+type ExpandableSection = "perfil" | "perfil_edit" | "seguridad" | "apariencia" | "moneda" | "formato_fecha" | "alertas" | "acerca" | null;
 
 const CURRENCIES = [
   { code: "USD", label: "USD - Dolar Estadounidense" },
@@ -39,7 +39,6 @@ export default function CuentaPage() {
   const [currency, setCurrency] = useState("USD");
   const [dateFormat, setDateFormat] = useState("DD/MM");
   const [budgetAlerts, setBudgetAlerts] = useState(true);
-  const [monthlyReport, setMonthlyReport] = useState(false);
 
   // Data for modals
   const [categories, setCategories] = useState<Category[]>([]);
@@ -61,7 +60,6 @@ export default function CuentaPage() {
         if (p.currency) setCurrency(p.currency);
         if (p.dateFormat) setDateFormat(p.dateFormat);
         if (p.budgetAlerts !== undefined) setBudgetAlerts(p.budgetAlerts);
-        if (p.monthlyReport !== undefined) setMonthlyReport(p.monthlyReport);
       } catch {}
     }
   }, []);
@@ -405,13 +403,6 @@ export default function CuentaPage() {
           <ToggleSwitch value={budgetAlerts} onChange={(v) => { setBudgetAlerts(v); savePrefs({ budgetAlerts: v }); }} />
         ) }, 3, false)}
 
-        {/* Reporte mensual */}
-        {renderItem({ icon: "📧", label: "Reporte mensual", desc: monthlyReport ? user.email || "Sin email configurado" : "Desactivado", expandKey: "reporte", right: (
-          <ToggleSwitch value={monthlyReport} onChange={(v) => {
-            if (v && !user.email) { toast("Configura tu email primero en Perfil", "error"); return; }
-            setMonthlyReport(v); savePrefs({ monthlyReport: v });
-          }} />
-        ) }, 4, false)}
 
       </div>
 
