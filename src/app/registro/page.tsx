@@ -19,6 +19,11 @@ export default function RegistroPage() {
     e.preventDefault();
     setError("");
 
+    if (!displayName.trim()) {
+      setError("El nombre es requerido");
+      return;
+    }
+
     if (!username.trim()) {
       setError("El usuario es requerido");
       return;
@@ -88,7 +93,6 @@ export default function RegistroPage() {
               onChange={(e) => setDisplayName(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
               placeholder="Tu nombre"
-              required
               autoFocus
             />
           </div>
@@ -110,7 +114,6 @@ export default function RegistroPage() {
               onChange={(e) => setUsername(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
               placeholder="Elige un usuario"
-              required
             />
           </div>
           <div>
@@ -122,7 +125,6 @@ export default function RegistroPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
                 placeholder="Minimo 8 caracteres"
-                required
               />
               <button
                 type="button"
@@ -143,7 +145,6 @@ export default function RegistroPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
                 placeholder="Repite la contrasena"
-                required
               />
               <button
                 type="button"

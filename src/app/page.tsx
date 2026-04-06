@@ -11,7 +11,6 @@ import ExportModal from "@/components/ExportModal";
 import BudgetModal from "@/components/BudgetModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { KPISkeleton, CategorySkeleton } from "@/components/SkeletonLoader";
-import dynamic from "next/dynamic";
 import RecurringExpensesModal from "@/components/RecurringExpensesModal";
 import IncomeModal from "@/components/IncomeModal";
 import ImportModal from "@/components/ImportModal";
@@ -21,9 +20,7 @@ import SavingsGoalsModal from "@/components/SavingsGoalsModal";
 import CategoryEditorModal from "@/components/CategoryEditorModal";
 import ShareButton from "@/components/ShareButton";
 import { usePreferences } from "@/lib/usePreferences";
-import { predictMonthEnd } from "@/lib/prediction";
-
-const DailyChart = dynamic(() => import("@/components/DailyChart"), { ssr: false });
+import React from "react";
 
 export default function Home() {
   return (
@@ -70,7 +67,7 @@ function HomeContent() {
   const [confettiShown, setConfettiShown] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [chartOpen, setChartOpen] = useState(false);
+  const [visibleDays, setVisibleDays] = useState(5);
   const [bulkBudgetOpen, setBulkBudgetOpen] = useState(false);
   const [savingsOpen, setSavingsOpen] = useState(false);
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
@@ -215,6 +212,12 @@ function HomeContent() {
     return map;
   }, [categories]);
 
+  const iconMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    categories.forEach((c) => { if (c.icon) map[c.name] = c.icon; });
+    return map;
+  }, [categories]);
+
   const categoryData = useMemo(() => {
     const map: Record<string, number> = {};
     expenses.forEach((e) => { map[e.category] = (map[e.category] || 0) + e.amount; });
@@ -254,9 +257,6 @@ function HomeContent() {
   const daysRemaining = isCurrentMonth ? Math.max(daysInMonth - now.getDate(), 0) : 0;
   const spentPct = budgetTotal > 0 ? (totalMonth / budgetTotal) * 100 : 0;
   const available = budgetTotal - totalMonth;
-  const avgDaily = daysPassed > 0 ? totalMonth / daysPassed : 0;
-  const targetDaily = daysRemaining > 0 ? Math.max(available, 0) / daysRemaining : 0;
-  const predicted = isCurrentMonth ? predictMonthEnd(totalMonth, daysPassed, daysInMonth) : 0;
 
   // Feature 3 — Trends (vs previous month)
   const prevMonthData = useMemo(() => {
@@ -358,11 +358,30 @@ function HomeContent() {
     return result;
   }, [expenses, searchQuery, filterCategory, filterMethod]);
 
+  const groupedExpenses = useMemo(() => {
+    const groups: Record<string, PersonalExpense[]> = {};
+    filteredExpenses.forEach((e) => {
+      if (!groups[e.date]) groups[e.date] = [];
+      groups[e.date].push(e);
+    });
+    return Object.entries(groups)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, items]) => ({
+        date,
+        items,
+        total: items.reduce((sum, e) => sum + e.amount, 0),
+      }));
+  }, [filteredExpenses]);
+
+  const visibleGroups = groupedExpenses.slice(0, visibleDays);
+  const hasMoreDays = groupedExpenses.length > visibleDays;
+
   const navigateMonth = (dir: -1 | 1) => {
     let m = viewMonth + dir;
     let y = viewYear;
     if (m < 0) { m = 11; y--; }
     if (m > 11) { m = 0; y++; }
+    setVisibleDays(5);
     router.push(`/?month=${m}&year=${y}`);
   };
 
@@ -408,7 +427,7 @@ function HomeContent() {
       {loading ? (
         <KPISkeleton />
       ) : hasBudgets ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3">
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gastado</p>
             <p className="text-lg sm:text-2xl font-semibold text-primary dark:text-white mt-1">{formatCurrency(totalMonth)}</p>
@@ -424,20 +443,6 @@ function HomeContent() {
             {isCurrentMonth && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {daysRemaining === 0 ? "ultimo dia del mes" : `quedan ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}`}
-              </p>
-            )}
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Promedio diario</p>
-            <p className="text-lg sm:text-2xl font-semibold text-primary dark:text-white mt-1">{formatCurrency(avgDaily)}</p>
-            {isCurrentMonth && daysRemaining > 0 && (
-              <p className={`text-xs mt-1 ${avgDaily > targetDaily ? "text-amber-500" : "text-green-500"}`}>
-                target: {formatCurrency(targetDaily)}/dia
-              </p>
-            )}
-            {isCurrentMonth && predicted > 0 && (
-              <p className={`text-xs mt-0.5 ${predicted > budgetTotal ? "text-red-400" : "text-green-400"}`}>
-                A este ritmo: {formatCurrency(predicted)}
               </p>
             )}
           </div>
@@ -571,8 +576,18 @@ function HomeContent() {
             ) : (
             <>
             {/* Mobile cards */}
-            <div className="sm:hidden space-y-2">
-              {filteredExpenses.map((e) => (
+            <div className="sm:hidden space-y-4">
+              {visibleGroups.map((group) => (
+                <div key={group.date} className="space-y-1.5">
+                  <div className="flex items-center justify-between px-1">
+                    <p className="text-xs font-medium text-muted dark:text-gray-400 uppercase">
+                      {formatDate(group.date)}
+                    </p>
+                    <p className="text-xs font-semibold text-primary dark:text-white">
+                      {formatCurrency(group.total)}
+                    </p>
+                  </div>
+                  {group.items.map((e) => (
                 <div key={e.id} className={`bg-white dark:bg-gray-900 rounded-xl shadow-sm dark:shadow-gray-900/20 p-4 ${deletingId === e.id ? "opacity-50" : ""}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -583,7 +598,6 @@ function HomeContent() {
                         >
                           {e.category}
                         </span>
-                        <span className="text-xs text-muted dark:text-gray-400">{formatDate(e.date)}</span>
                       </div>
                       <p className="text-lg font-bold text-primary dark:text-white">{formatCurrency(e.amount)}</p>
                       {e.notes && <p className="text-sm text-muted dark:text-gray-400 truncate mt-0.5">{e.notes}</p>}
@@ -621,7 +635,17 @@ function HomeContent() {
                     </div>
                   </div>
                 </div>
+                  ))}
+                </div>
               ))}
+              {hasMoreDays && (
+                <button
+                  onClick={() => setVisibleDays((v) => v + 5)}
+                  className="w-full py-3 text-sm text-accent hover:text-accent-light font-medium transition-colors"
+                >
+                  Ver mas dias ({groupedExpenses.length - visibleDays} restantes)
+                </button>
+              )}
             </div>
 
             {/* Desktop table */}
@@ -631,7 +655,6 @@ function HomeContent() {
                   <thead>
                     <tr className="bg-primary text-white">
                       <th className="px-3 py-3 text-left">#</th>
-                      <th className="px-3 py-3 text-left">Fecha</th>
                       <th className="px-3 py-3 text-right">Monto</th>
                       <th className="px-3 py-3 text-left">Categoria</th>
                       <th className="px-3 py-3 text-left">Notas</th>
@@ -640,10 +663,16 @@ function HomeContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredExpenses.map((e, i) => (
+                    {visibleGroups.map((group) => (
+                      <React.Fragment key={group.date}>
+                        <tr className="bg-gray-50 dark:bg-gray-800">
+                          <td colSpan={6} className="px-3 py-2 text-xs font-medium text-muted dark:text-gray-400 uppercase">
+                            {formatDate(group.date)} — {formatCurrency(group.total)}
+                          </td>
+                        </tr>
+                        {group.items.map((e, i) => (
                       <tr key={e.id} className={`border-b border-gray-50 dark:border-gray-800 ${i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-surface dark:bg-gray-800"} ${deletingId === e.id ? "opacity-50" : ""}`}>
-                        <td className="px-3 py-3 font-medium text-muted dark:text-gray-400">{filteredExpenses.length - i}</td>
-                        <td className="px-3 py-3">{formatDate(e.date)}</td>
+                        <td className="px-3 py-3 font-medium text-muted dark:text-gray-400">{group.items.length - i}</td>
                         <td className="px-3 py-3 text-right font-semibold">{formatCurrency(e.amount)}</td>
                         <td className="px-3 py-3">
                           <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full text-white"
@@ -690,10 +719,20 @@ function HomeContent() {
                           </div>
                         </td>
                       </tr>
+                        ))}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
               </div>
+              {hasMoreDays && (
+                <button
+                  onClick={() => setVisibleDays((v) => v + 5)}
+                  className="w-full py-3 text-sm text-accent hover:text-accent-light font-medium transition-colors"
+                >
+                  Ver mas dias ({groupedExpenses.length - visibleDays} restantes)
+                </button>
+              )}
             </div>
           </>
             )}
@@ -720,7 +759,7 @@ function HomeContent() {
                   <div className="flex items-center justify-between text-sm mb-1 gap-2">
                     <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                      <span className="font-medium text-primary dark:text-white">{getCategoryIcon(cat.name)} {cat.name}</span>
+                      <span className="font-medium text-primary dark:text-white">{iconMap[cat.name] || getCategoryIcon(cat.name)} {cat.name}</span>
                       <button
                         onClick={() => { setBudgetCategory(cat.name); setBudgetModalOpen(true); }}
                         className="text-muted dark:text-gray-400 hover:text-accent transition-colors"
@@ -772,36 +811,12 @@ function HomeContent() {
             {categoryData.map((cat) => (
               <div key={cat.name} className="flex items-center gap-1.5 text-xs">
                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                <span className="text-muted dark:text-gray-400">{getCategoryIcon(cat.name)} {cat.name}</span>
+                <span className="text-muted dark:text-gray-400">{iconMap[cat.name] || getCategoryIcon(cat.name)} {cat.name}</span>
               </div>
             ))}
           </div>
         </div>
       ) : null}
-
-      {/* Daily spending chart — collapsible */}
-      {expenses.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
-          <button
-            onClick={() => setChartOpen(!chartOpen)}
-            className="flex items-center justify-between w-full text-left"
-          >
-            <h2 className="text-base font-semibold text-primary dark:text-white">Tendencia diaria</h2>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`h-5 w-5 text-muted dark:text-gray-400 transition-transform duration-200 ${chartOpen ? "rotate-180" : ""}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {chartOpen && (
-            <div className="mt-3">
-              <DailyChart expenses={expenses} daysInMonth={lastDay} budgetTotal={hasBudgets ? budgetTotal : undefined} />
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Trend KPIs */}
       {hasTrendData && (

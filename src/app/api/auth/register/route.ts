@@ -58,6 +58,27 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Create default categories for the new user
+  const { data: newUser } = await supabaseAdmin
+    .from("users")
+    .select("id")
+    .eq("username", username)
+    .single();
+
+  if (newUser) {
+    const defaultCategories = [
+      { user_id: newUser.id, name: "Casa", color: "#3B82F6", icon: "🏠" },
+      { user_id: newUser.id, name: "Comida", color: "#F59E0B", icon: "🍔" },
+      { user_id: newUser.id, name: "Transporte", color: "#EF4444", icon: "🚗" },
+      { user_id: newUser.id, name: "Servicios", color: "#8B5CF6", icon: "⚡" },
+      { user_id: newUser.id, name: "Salud", color: "#10B981", icon: "💊" },
+      { user_id: newUser.id, name: "Entretenimiento", color: "#EC4899", icon: "🎮" },
+      { user_id: newUser.id, name: "Ropa", color: "#14B8A6", icon: "👕" },
+      { user_id: newUser.id, name: "Educacion", color: "#06B6D4", icon: "📚" },
+    ];
+    await supabaseAdmin.from("categories").insert(defaultCategories);
+  }
+
   // Send welcome email if provided
   if (email) {
     await sendEmail({
