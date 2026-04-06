@@ -60,7 +60,8 @@ export default function Confetti({ show, onComplete }: Props) {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 pointer-events-none overflow-hidden"
+      className="fixed inset-0 z-50 pointer-events-auto cursor-pointer overflow-hidden"
+      onClick={() => onComplete?.()}
     >
       <style jsx>{`
         @keyframes confetti-fall {

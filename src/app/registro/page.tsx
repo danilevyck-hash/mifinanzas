@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function RegistroPage() {
@@ -14,6 +14,19 @@ export default function RegistroPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!username.trim() || username.length < 3) { setUsernameAvailable(null); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
+        const data = await res.json();
+        setUsernameAvailable(data.available);
+      } catch { setUsernameAvailable(null); }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [username]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +37,8 @@ export default function RegistroPage() {
       return;
     }
 
-    if (!email.trim() || !email.includes("@")) {
-      setError("El email es requerido");
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Ingresa un email valido");
       return;
     }
 
@@ -120,6 +133,12 @@ export default function RegistroPage() {
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
               placeholder="Elige un usuario"
             />
+            {usernameAvailable === true && username.length >= 3 && (
+              <p className="text-[11px] text-green-500 mt-0.5">Usuario disponible</p>
+            )}
+            {usernameAvailable === false && (
+              <p className="text-[11px] text-red-500 mt-0.5">Este usuario ya existe</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-primary mb-1">Contrasena</label>
@@ -140,6 +159,7 @@ export default function RegistroPage() {
                 {showPassword ? eyeOffIcon : eyeIcon}
               </button>
             </div>
+            <p className="text-[11px] text-[#8E8E93] mt-0.5">Minimo 8 caracteres. Usa mayusculas y numeros para mayor seguridad.</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-primary mb-1">Confirmar Contrasena</label>

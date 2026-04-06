@@ -56,8 +56,7 @@ function HomeContent() {
   const [confettiShown, setConfettiShown] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [visibleDays, setVisibleDays] = useState(5);
-  const [duplicating, setDuplicating] = useState<PersonalExpense | null>(null);
+  const [visibleCount, setVisibleCount] = useState(15);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const viewMonthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
@@ -135,7 +134,6 @@ function HomeContent() {
       }
       setModalOpen(false);
       setEditing(null);
-      setDuplicating(null);
       toast(expense.id ? "Gasto actualizado" : "Gasto agregado");
       // Save last used category and payment method
       if (expense.category || expense.payment_method) {
@@ -189,6 +187,30 @@ function HomeContent() {
       toast("Error de conexion", "error");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleDuplicate = async (expense: PersonalExpense) => {
+    const today = new Date().toISOString().split("T")[0];
+    const dup = {
+      user_id: expense.user_id,
+      date: today,
+      amount: expense.amount,
+      category: expense.category,
+      notes: expense.notes,
+      payment_method: expense.payment_method,
+    };
+    try {
+      const res = await authFetch("/api/personal-expenses", { method: "POST", body: JSON.stringify(dup) });
+      if (res.ok) {
+        toast("Gasto duplicado");
+        fetchExpenses();
+        fetchAllExpenses();
+      } else {
+        toast("Error al duplicar", "error");
+      }
+    } catch {
+      toast("Error de conexion", "error");
     }
   };
 
@@ -339,15 +361,27 @@ function HomeContent() {
       }));
   }, [filteredExpenses]);
 
-  const visibleGroups = groupedExpenses.slice(0, visibleDays);
-  const hasMoreDays = groupedExpenses.length > visibleDays;
+  const allFilteredExpenses = useMemo(() => groupedExpenses.flatMap(g => g.items), [groupedExpenses]);
+  const visibleExpenses = useMemo(() => allFilteredExpenses.slice(0, visibleCount), [allFilteredExpenses, visibleCount]);
+  const hasMore = allFilteredExpenses.length > visibleCount;
+
+  const visibleGroups = useMemo(() => {
+    const groups: Record<string, PersonalExpense[]> = {};
+    visibleExpenses.forEach(e => {
+      if (!groups[e.date]) groups[e.date] = [];
+      groups[e.date].push(e);
+    });
+    return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a)).map(([date, items]) => ({
+      date, items, total: items.reduce((sum, e) => sum + e.amount, 0)
+    }));
+  }, [visibleExpenses]);
 
   const navigateMonth = (dir: -1 | 1) => {
     let m = viewMonth + dir;
     let y = viewYear;
     if (m < 0) { m = 11; y--; }
     if (m > 11) { m = 0; y++; }
-    setVisibleDays(5);
+    setVisibleCount(15);
     router.push(`/?month=${m}&year=${y}`);
   };
 
@@ -575,7 +609,7 @@ function HomeContent() {
                             <p className="text-[11px] text-[#8E8E93]">{e.payment_method}</p>
                           </div>
                           <button
-                            onClick={(ev) => { ev.stopPropagation(); setDuplicating(e); setModalOpen(true); }}
+                            onClick={(ev) => { ev.stopPropagation(); handleDuplicate(e); }}
                             className="ml-1 p-1 text-[#C7C7CC] hover:text-[#007AFF] transition-colors flex-shrink-0"
                             title="Duplicar"
                           >
@@ -592,12 +626,12 @@ function HomeContent() {
                   </div>
                 </div>
               ))}
-              {hasMoreDays && (
+              {hasMore && (
                 <button
-                  onClick={() => setVisibleDays((v) => v + 5)}
+                  onClick={() => setVisibleCount(v => v + 15)}
                   className="w-full py-3 text-[15px] text-[#007AFF] font-medium"
                 >
-                  Ver mas ({groupedExpenses.length - visibleDays} dias)
+                  Ver mas ({allFilteredExpenses.length - visibleCount} restantes)
                 </button>
               )}
             </div>
@@ -643,7 +677,7 @@ function HomeContent() {
                         <td className="px-3 py-3 text-center">
                           <div className="flex justify-center gap-1">
                             <button
-                              onClick={() => { setDuplicating(e); setModalOpen(true); }}
+                              onClick={() => handleDuplicate(e)}
                               className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-blue-500 hover:bg-blue-500/10 transition-colors"
                               title="Duplicar"
                             >
@@ -679,12 +713,12 @@ function HomeContent() {
                   </tbody>
                 </table>
               </div>
-              {hasMoreDays && (
+              {hasMore && (
                 <button
-                  onClick={() => setVisibleDays((v) => v + 5)}
+                  onClick={() => setVisibleCount(v => v + 15)}
                   className="w-full py-3 text-[15px] text-[#007AFF] font-medium"
                 >
-                  Ver mas ({groupedExpenses.length - visibleDays} dias)
+                  Ver mas ({allFilteredExpenses.length - visibleCount} restantes)
                 </button>
               )}
             </div>
@@ -703,10 +737,9 @@ function HomeContent() {
       />
       <ExpenseModal
         isOpen={modalOpen}
-        onClose={() => { setModalOpen(false); setEditing(null); setDuplicating(null); }}
+        onClose={() => { setModalOpen(false); setEditing(null); }}
         onSave={handleSave}
         editingExpense={editing}
-        duplicateExpense={duplicating}
         categories={categories}
         userId={user.id}
         saving={saving}
@@ -730,7 +763,7 @@ function HomeContent() {
 
     {/* Floating Action Button */}
     <button
-      onClick={() => { setEditing(null); setDuplicating(null); setModalOpen(true); }}
+      onClick={() => { setEditing(null); setModalOpen(true); }}
       className="fixed bottom-24 sm:bottom-8 right-5 sm:right-8 z-40 w-14 h-14 bg-[#007AFF] text-white rounded-full flex items-center justify-center transition-all active:scale-90"
       style={{ boxShadow: "0 4px 16px rgba(0,122,255,0.4)" }}
       aria-label="Nuevo Gasto"

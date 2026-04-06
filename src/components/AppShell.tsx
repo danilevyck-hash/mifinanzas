@@ -14,7 +14,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
     if (!user && !isPublicPage) {
-      router.replace("/login");
+      router.replace("/login?expired=1");
     } else if (user && pathname === "/login") {
       router.replace("/");
     }
@@ -24,8 +24,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-muted dark:text-gray-400 text-sm">Cargando...</p>
+          <div className="w-8 h-8 border-2 border-[#8E8E93] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-[#8E8E93] text-sm">Cargando...</p>
         </div>
       </div>
     );

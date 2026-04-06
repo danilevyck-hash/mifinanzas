@@ -162,7 +162,10 @@ export default function CuentaPage() {
     <div className="max-w-lg mx-auto pb-8">
       {/* Profile card */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden mb-6">
-        <div className="p-5 flex items-center gap-4">
+        <button
+          onClick={() => { setDisplayName(user.display_name); setEmail(user.email || ""); setOpenSection(openSection === "perfil_edit" ? null : "perfil_edit"); }}
+          className="w-full p-5 flex items-center gap-4 text-left"
+        >
           <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-2xl font-semibold text-gray-500 dark:text-gray-300">{user.display_name.charAt(0).toUpperCase()}</span>
           </div>
@@ -170,11 +173,10 @@ export default function CuentaPage() {
             <p className="text-[17px] font-semibold text-primary dark:text-white truncate">{user.display_name}</p>
             <p className="text-[13px] text-muted dark:text-gray-400">{user.email || `@${user.username}`}</p>
           </div>
-          <button onClick={() => { setDisplayName(user.display_name); setEmail(user.email || ""); setOpenSection("perfil_edit"); }}
-            className="text-blue-500 text-[15px] font-medium">
-            Editar
-          </button>
-        </div>
+          <svg className={`h-4 w-4 text-gray-300 dark:text-gray-600 transition-transform ${openSection === "perfil_edit" ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
 
         {/* Inline edit */}
         {openSection === "perfil_edit" && (
@@ -224,7 +226,7 @@ export default function CuentaPage() {
         {openSection === "moneda" && (
           <div className="px-4 pb-3 animate-fade-in">
             {CURRENCIES.map((c) => (
-              <button key={c.code} onClick={() => { setCurrency(c.code); savePrefs({ currency: c.code }); setOpenSection(null); }}
+              <button key={c.code} onClick={() => { setCurrency(c.code); savePrefs({ currency: c.code }); setOpenSection(null); toast(`Moneda: ${c.code}`); }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[15px] text-primary dark:text-white">
                 <span>{c.label}</span>
                 {currency === c.code && (
@@ -241,7 +243,7 @@ export default function CuentaPage() {
         {openSection === "formato_fecha" && (
           <div className="px-4 pb-3 animate-fade-in">
             {[{ v: "DD/MM", l: "31/12/2025" }, { v: "MM/DD", l: "12/31/2025" }].map((f) => (
-              <button key={f.v} onClick={() => { setDateFormat(f.v); savePrefs({ dateFormat: f.v }); setOpenSection(null); }}
+              <button key={f.v} onClick={() => { setDateFormat(f.v); savePrefs({ dateFormat: f.v }); setOpenSection(null); toast("Formato actualizado"); }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[15px] text-primary dark:text-white">
                 <span>{f.l}</span>
                 {dateFormat === f.v && (
@@ -254,7 +256,7 @@ export default function CuentaPage() {
           </div>
         )}
         <Divider />
-        <Cell label="Alertas de presupuesto" toggle={budgetAlerts} onToggle={(v) => { setBudgetAlerts(v); savePrefs({ budgetAlerts: v }); }} />
+        <Cell label="Alertas de presupuesto" toggle={budgetAlerts} onToggle={(v) => { setBudgetAlerts(v); savePrefs({ budgetAlerts: v }); toast(v ? "Alertas activadas" : "Alertas desactivadas"); }} />
       </div>
 
       {/* Seguridad */}

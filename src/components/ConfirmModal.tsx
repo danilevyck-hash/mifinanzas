@@ -23,16 +23,16 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
         </div>
         <div className="border-t border-[#C6C6C8]/30 dark:border-gray-700/50">
           <button
-            onClick={onConfirm}
-            className="w-full py-3.5 text-[17px] text-red-500 font-medium border-b border-[#C6C6C8]/30 dark:border-gray-700/50"
-          >
-            Eliminar
-          </button>
-          <button
             onClick={onClose}
-            className="w-full py-3.5 text-[17px] text-[#007AFF] font-semibold"
+            className="w-full py-3.5 text-[17px] text-[#007AFF] font-semibold border-b border-[#C6C6C8]/30 dark:border-gray-700/50"
           >
             Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="w-full py-3.5 text-[17px] text-red-500 font-medium"
+          >
+            Eliminar
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/components/Toast";
 
 type ScanResult = {
   amount: number;
@@ -19,6 +20,7 @@ type Props = {
 
 export default function ReceiptCapture({ onCapture, onScanResult, existingUrl, onRemove, onViewFull }: Props) {
   const { authFetch } = useAuth();
+  const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export default function ReceiptCapture({ onCapture, onScanResult, existingUrl, o
               const scanData = await scanRes.json();
               onScanResult(scanData);
             }
-          } catch { /* scan failed silently */ }
+          } catch { toast("No se pudo leer el recibo", "error"); }
           finally { setScanning(false); }
         }
       } else {

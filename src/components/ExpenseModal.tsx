@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { PersonalExpense, Category, PAYMENT_METHODS } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/components/Toast";
 import ReceiptCapture from "./ReceiptCapture";
-import LocationTag from "./LocationTag";
 import ReceiptViewer from "./ReceiptViewer";
 
 type Props = {
@@ -17,14 +17,14 @@ type Props = {
   saving?: boolean;
   defaultCategory?: string;
   defaultPaymentMethod?: string;
-  duplicateExpense?: PersonalExpense | null;
 };
 
 export default function ExpenseModal({
   isOpen, onClose, onSave, editingExpense, categories, userId, saving,
-  defaultCategory, defaultPaymentMethod, duplicateExpense,
+  defaultCategory, defaultPaymentMethod,
 }: Props) {
   const { authFetch } = useAuth();
+  const { toast } = useToast();
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -35,8 +35,6 @@ export default function ExpenseModal({
   const notesRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>(undefined);
-  const [latitude, setLatitude] = useState<number | undefined>(undefined);
-  const [longitude, setLongitude] = useState<number | undefined>(undefined);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
   const todayStr = new Date().toISOString().split("T")[0];
@@ -83,18 +81,6 @@ export default function ExpenseModal({
       setNotes(editingExpense.notes || "");
       setPaymentMethod(editingExpense.payment_method);
       setReceiptUrl(editingExpense.receipt_url);
-      setLatitude(editingExpense.latitude);
-      setLongitude(editingExpense.longitude);
-    } else if (duplicateExpense) {
-      // Duplicate: copy fields but set today's date
-      setDate(todayStr);
-      setAmount(duplicateExpense.amount.toString());
-      setCategory(duplicateExpense.category);
-      setNotes(duplicateExpense.notes || "");
-      setPaymentMethod(duplicateExpense.payment_method);
-      setReceiptUrl(duplicateExpense.receipt_url);
-      setLatitude(duplicateExpense.latitude);
-      setLongitude(duplicateExpense.longitude);
     } else {
       setDate(todayStr);
       setAmount("");
@@ -112,24 +98,26 @@ export default function ExpenseModal({
         setPaymentMethod(PAYMENT_METHODS[0]);
       }
       setReceiptUrl(undefined);
-      setLatitude(undefined);
-      setLongitude(undefined);
     }
     setShowSuggestions(false);
-    // Auto-capture location for new expenses
-    if (!editingExpense && !duplicateExpense && isOpen && typeof navigator !== "undefined" && "geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => { setLatitude(pos.coords.latitude); setLongitude(pos.coords.longitude); },
-        () => { /* permission denied or error — silently skip */ },
-        { timeout: 5000, maximumAge: 60000 }
-      );
-    }
-  }, [editingExpense, duplicateExpense, isOpen, categories, defaultCategory, defaultPaymentMethod, todayStr]);
+  }, [editingExpense, isOpen, categories, defaultCategory, defaultPaymentMethod, todayStr]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!amount || parseFloat(amount) <= 0) {
+      toast("Ingresa un monto", "error");
+      return;
+    }
+    if (!category) {
+      toast("Selecciona una categoria", "error");
+      return;
+    }
+    if (!date) {
+      toast("Selecciona una fecha", "error");
+      return;
+    }
     const expense: Partial<PersonalExpense> = {
       user_id: userId,
       date,
@@ -138,8 +126,6 @@ export default function ExpenseModal({
       notes: notes.trim() || undefined,
       payment_method: paymentMethod,
       receipt_url: receiptUrl,
-      latitude,
-      longitude,
     };
     if (editingExpense) {
       expense.id = editingExpense.id;
@@ -168,7 +154,7 @@ export default function ExpenseModal({
         <div className="flex items-center justify-between p-4 border-b border-[#C6C6C8]/30 dark:border-gray-700/50">
           <button type="button" onClick={onClose} className="text-[17px] text-[#007AFF] min-w-[70px] text-left">Cancelar</button>
           <h2 className="text-[17px] font-semibold text-primary dark:text-white">
-            {editingExpense ? "Editar Gasto" : duplicateExpense ? "Duplicar Gasto" : "Nuevo Gasto"}
+            {editingExpense ? "Editar Gasto" : "Nuevo Gasto"}
           </h2>
           <button type="submit" disabled={saving} className="text-[17px] text-[#007AFF] font-semibold min-w-[70px] text-right disabled:opacity-50">
             {saving ? "..." : "Guardar"}
@@ -225,6 +211,9 @@ export default function ExpenseModal({
               </select>
             ) : (
               <p className="text-sm text-muted dark:text-gray-400 py-3">Crea categorias en Configuracion</p>
+            )}
+            {!editingExpense && defaultCategory && category === defaultCategory && (
+              <p className="text-[11px] text-[#8E8E93] mt-0.5">Ultima categoria usada</p>
             )}
           </div>
           <div className="relative">
@@ -284,11 +273,6 @@ export default function ExpenseModal({
             onViewFull={(url) => setViewingReceipt(url)}
           />
 
-          <LocationTag
-            onLocation={(lat, lng) => { setLatitude(lat); setLongitude(lng); }}
-            existingLat={latitude}
-            existingLng={longitude}
-          />
 
         </div>
       </form>
