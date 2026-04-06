@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 export default function RegistroPage() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -38,7 +39,7 @@ export default function RegistroPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: displayName, username, password }),
+        body: JSON.stringify({ display_name: displayName, username, password, email: email || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -89,6 +90,16 @@ export default function RegistroPage() {
               placeholder="Tu nombre"
               required
               autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-primary mb-1">Email (opcional)</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
+              placeholder="tu@email.com"
             />
           </div>
           <div>

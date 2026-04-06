@@ -20,10 +20,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggle = () => {
+    document.documentElement.classList.add("transitioning");
     const next = !dark;
     setDark(next);
     localStorage.setItem("mifinanzas_theme", next ? "dark" : "light");
     document.documentElement.classList.toggle("dark", next);
+    setTimeout(() => document.documentElement.classList.remove("transitioning"), 300);
   };
 
   return <ThemeContext.Provider value={{ dark, toggle }}>{children}</ThemeContext.Provider>;

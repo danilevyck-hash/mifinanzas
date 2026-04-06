@@ -9,6 +9,7 @@ export type User = {
   id: number;
   username: string;
   display_name: string;
+  email?: string;
 };
 
 export type PersonalExpense = {
@@ -19,6 +20,11 @@ export type PersonalExpense = {
   category: string;
   notes?: string;
   payment_method: string;
+  receipt_url?: string;
+  latitude?: number;
+  longitude?: number;
+  subcategory?: string;
+  split_count?: number;
   created_at?: string;
 };
 

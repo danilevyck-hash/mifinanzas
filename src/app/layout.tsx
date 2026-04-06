@@ -6,6 +6,7 @@ import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { ToastProvider } from "@/components/Toast";
 import { ThemeProvider } from "@/lib/theme";
 import { Analytics } from "@vercel/analytics/react";
+import OfflineBanner from "@/components/OfflineBanner";
 
 export const metadata: Metadata = {
   title: "MiFinanzas — Control de Gastos Personales",
@@ -55,6 +56,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>
+              <OfflineBanner />
               <AppShell>{children}</AppShell>
             </ToastProvider>
           </AuthProvider>

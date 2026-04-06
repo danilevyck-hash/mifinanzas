@@ -1,5 +1,5 @@
-const CACHE_NAME = "mifinanzas-v1";
-const PRECACHE_URLS = ["/", "/manifest.json"];
+const CACHE_NAME = "mifinanzas-v2";
+const PRECACHE_URLS = ["/", "/resumen", "/cuenta", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -19,8 +19,35 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET" || request.url.includes("/api/")) return;
+  if (request.method !== "GET") return;
 
+  const url = new URL(request.url);
+
+  // API requests: network-first, fallback to cache (stale data)
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.match(request).then((cached) => {
+            if (cached) return cached;
+            return new Response(JSON.stringify({ error: "Offline" }), {
+              status: 503,
+              headers: { "Content-Type": "application/json" },
+            });
+          })
+        )
+    );
+    return;
+  }
+
+  // Navigation & assets: network-first, fallback to cache
   event.respondWith(
     fetch(request)
       .then((response) => {

@@ -7,10 +7,11 @@ export async function GET(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { data, error } = await supabaseAdmin
-    .from("categories")
+    .from("savings_goals")
     .select("*")
     .eq("user_id", userId)
-    .order("name");
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data || []);
@@ -21,10 +22,22 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const body = await request.json();
+  const { name, target_amount, deadline } = body;
+
+  if (!name || !target_amount) {
+    return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 });
+  }
 
   const { data, error } = await supabaseAdmin
-    .from("categories")
-    .insert([{ user_id: userId, name: body.name, color: body.color }])
+    .from("savings_goals")
+    .insert([{
+      user_id: userId,
+      name,
+      target_amount,
+      current_amount: 0,
+      deadline: deadline || null,
+      is_active: true,
+    }])
     .select()
     .single();
 
@@ -37,18 +50,14 @@ export async function PUT(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const body = await request.json();
-  const { id, color, icon } = body;
+  const { id, ...updates } = body;
 
   if (!id) {
     return NextResponse.json({ error: "Falta el id" }, { status: 400 });
   }
 
-  const updates: Record<string, string> = {};
-  if (color !== undefined) updates.color = color;
-  if (icon !== undefined) updates.icon = icon;
-
   const { data, error } = await supabaseAdmin
-    .from("categories")
+    .from("savings_goals")
     .update(updates)
     .eq("id", id)
     .eq("user_id", userId)
@@ -65,8 +74,12 @@ export async function DELETE(request: NextRequest) {
 
   const { id } = await request.json();
 
+  if (!id) {
+    return NextResponse.json({ error: "Falta el id" }, { status: 400 });
+  }
+
   const { error } = await supabaseAdmin
-    .from("categories")
+    .from("savings_goals")
     .delete()
     .eq("id", id)
     .eq("user_id", userId);

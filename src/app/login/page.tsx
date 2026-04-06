@@ -17,6 +17,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered") === "1";
+  const reset = searchParams.get("reset") === "1";
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -47,6 +48,11 @@ function LoginContent() {
           {registered && !error && (
             <div className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm rounded-xl px-4 py-2 text-center">
               Cuenta creada exitosamente. Inicia sesion.
+            </div>
+          )}
+          {reset && !error && (
+            <div className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm rounded-xl px-4 py-2 text-center">
+              Contrasena cambiada. Inicia sesion con tu nueva contrasena.
             </div>
           )}
           {error && (
@@ -104,8 +110,11 @@ function LoginContent() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
-        <div className="px-6 pb-5 text-center">
-          <a href="/registro" className="text-sm text-accent hover:underline">
+        <div className="px-6 pb-5 text-center space-y-2">
+          <a href="/recuperar" className="block text-sm text-muted dark:text-gray-400 hover:underline">
+            Olvidaste tu contrasena?
+          </a>
+          <a href="/registro" className="block text-sm text-accent hover:underline">
             No tienes cuenta? Registrate
           </a>
         </div>

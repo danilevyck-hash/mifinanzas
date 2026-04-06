@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PersonalExpense, Category, PAYMENT_METHODS, DEFAULT_COLORS } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import ReceiptCapture from "./ReceiptCapture";
+import LocationTag from "./LocationTag";
+import ReceiptViewer from "./ReceiptViewer";
 
 type Props = {
   isOpen: boolean;
@@ -13,9 +16,15 @@ type Props = {
   onCategoryCreated: () => void;
   userId: number;
   saving?: boolean;
+  defaultCategory?: string;
+  defaultPaymentMethod?: string;
+  duplicateExpense?: PersonalExpense | null;
 };
 
-export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, categories, onCategoryCreated, userId, saving }: Props) {
+export default function ExpenseModal({
+  isOpen, onClose, onSave, editingExpense, categories, onCategoryCreated, userId, saving,
+  defaultCategory, defaultPaymentMethod, duplicateExpense,
+}: Props) {
   const { authFetch } = useAuth();
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
@@ -25,6 +34,50 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
+  const [noteSuggestions, setNoteSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const notesRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | undefined>(undefined);
+  const [latitude, setLatitude] = useState<number | undefined>(undefined);
+  const [longitude, setLongitude] = useState<number | undefined>(undefined);
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayStr = yesterdayDate.toISOString().split("T")[0];
+  const dayBeforeDate = new Date();
+  dayBeforeDate.setDate(dayBeforeDate.getDate() - 2);
+  const dayBeforeStr = dayBeforeDate.toISOString().split("T")[0];
+
+  // Fetch note suggestions when category changes
+  useEffect(() => {
+    if (!category || !isOpen) {
+      setNoteSuggestions([]);
+      return;
+    }
+    authFetch(`/api/notes-suggestions?category=${encodeURIComponent(category)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => { if (Array.isArray(d)) setNoteSuggestions(d); })
+      .catch(() => {});
+  }, [category, isOpen, authFetch]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(e.target as Node) &&
+        notesRef.current &&
+        !notesRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   useEffect(() => {
     if (editingExpense) {
@@ -33,16 +86,43 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
       setCategory(editingExpense.category);
       setNotes(editingExpense.notes || "");
       setPaymentMethod(editingExpense.payment_method);
+      setReceiptUrl(editingExpense.receipt_url);
+      setLatitude(editingExpense.latitude);
+      setLongitude(editingExpense.longitude);
+    } else if (duplicateExpense) {
+      // Duplicate: copy fields but set today's date
+      setDate(todayStr);
+      setAmount(duplicateExpense.amount.toString());
+      setCategory(duplicateExpense.category);
+      setNotes(duplicateExpense.notes || "");
+      setPaymentMethod(duplicateExpense.payment_method);
+      setReceiptUrl(duplicateExpense.receipt_url);
+      setLatitude(duplicateExpense.latitude);
+      setLongitude(duplicateExpense.longitude);
     } else {
-      setDate(new Date().toISOString().split("T")[0]);
+      setDate(todayStr);
       setAmount("");
-      setCategory(categories.length > 0 ? categories[0].name : "");
+      // Smart defaults: use saved preference if valid, else first category
+      const categoryNames = categories.map((c) => c.name);
+      if (defaultCategory && categoryNames.includes(defaultCategory)) {
+        setCategory(defaultCategory);
+      } else {
+        setCategory(categories.length > 0 ? categories[0].name : "");
+      }
       setNotes("");
-      setPaymentMethod(PAYMENT_METHODS[0]);
+      if (defaultPaymentMethod && (PAYMENT_METHODS as readonly string[]).includes(defaultPaymentMethod)) {
+        setPaymentMethod(defaultPaymentMethod);
+      } else {
+        setPaymentMethod(PAYMENT_METHODS[0]);
+      }
+      setReceiptUrl(undefined);
+      setLatitude(undefined);
+      setLongitude(undefined);
     }
     setShowNewCategory(categories.length === 0);
     setNewCategoryName("");
-  }, [editingExpense, isOpen, categories]);
+    setShowSuggestions(false);
+  }, [editingExpense, duplicateExpense, isOpen, categories, defaultCategory, defaultPaymentMethod, todayStr]);
 
   if (!isOpen) return null;
 
@@ -84,12 +164,26 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
       category,
       notes: notes.trim() || undefined,
       payment_method: paymentMethod,
+      receipt_url: receiptUrl,
+      latitude,
+      longitude,
     };
     if (editingExpense) {
       expense.id = editingExpense.id;
     }
     onSave(expense);
   };
+
+  const filteredSuggestions = noteSuggestions.filter(
+    (s) => !notes || s.toLowerCase().includes(notes.toLowerCase())
+  );
+
+  const dateShortcutClass = (target: string) =>
+    `text-xs px-2.5 py-1 rounded-lg transition-colors ${
+      date === target
+        ? "bg-accent text-white"
+        : "bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400"
+    }`;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
@@ -99,7 +193,7 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
           <h2 className="text-lg font-semibold">
-            {editingExpense ? "Editar Gasto" : "Nuevo Gasto"}
+            {editingExpense ? "Editar Gasto" : duplicateExpense ? "Duplicar Gasto" : "Nuevo Gasto"}
           </h2>
           <button
             onClick={onClose}
@@ -113,6 +207,17 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-primary dark:text-white mb-1">Fecha</label>
+            <div className="flex gap-2 mb-1.5">
+              <button type="button" onClick={() => setDate(todayStr)} className={dateShortcutClass(todayStr)}>
+                Hoy
+              </button>
+              <button type="button" onClick={() => setDate(yesterdayStr)} className={dateShortcutClass(yesterdayStr)}>
+                Ayer
+              </button>
+              <button type="button" onClick={() => setDate(dayBeforeStr)} className={dateShortcutClass(dayBeforeStr)}>
+                Anteayer
+              </button>
+            </div>
             <input
               type="date"
               value={date}
@@ -181,15 +286,34 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
               </div>
             )}
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-primary dark:text-white mb-1">Notas</label>
             <input
+              ref={notesRef}
               type="text"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => { setNotes(e.target.value); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
               className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="Descripcion del gasto..."
             />
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="flex flex-wrap gap-1.5 mt-1.5"
+              >
+                {filteredSuggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => { setNotes(s); setShowSuggestions(false); }}
+                    className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400 hover:bg-accent hover:text-white transition-colors truncate max-w-[200px]"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-primary dark:text-white mb-1">Metodo de Pago</label>
@@ -204,6 +328,19 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
               ))}
             </select>
           </div>
+          <ReceiptCapture
+            onCapture={(url) => setReceiptUrl(url)}
+            existingUrl={receiptUrl}
+            onRemove={() => setReceiptUrl(undefined)}
+            onViewFull={(url) => setViewingReceipt(url)}
+          />
+
+          <LocationTag
+            onLocation={(lat, lng) => { setLatitude(lat); setLongitude(lng); }}
+            existingLat={latitude}
+            existingLng={longitude}
+          />
+
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
@@ -222,6 +359,10 @@ export default function ExpenseModal({ isOpen, onClose, onSave, editingExpense, 
           </div>
         </form>
       </div>
+
+      {viewingReceipt && (
+        <ReceiptViewer url={viewingReceipt} onClose={() => setViewingReceipt(null)} />
+      )}
     </div>
   );
 }

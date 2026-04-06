@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
   const { data: user, error } = await supabaseAdmin
     .from("users")
-    .select("id, username, display_name, password")
+    .select("id, username, display_name, email, password")
     .eq("username", username)
     .single();
 
@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
     id: user.id,
     username: user.username,
     display_name: user.display_name,
+    email: user.email || undefined,
     token,
   });
 }

@@ -39,6 +39,11 @@ export async function POST(request: NextRequest) {
       category: body.category,
       notes: body.notes || null,
       payment_method: body.payment_method,
+      receipt_url: body.receipt_url || null,
+      latitude: body.latitude ?? null,
+      longitude: body.longitude ?? null,
+      split_count: body.split_count ?? null,
+      subcategory: body.subcategory || null,
     }])
     .select()
     .single();
@@ -60,6 +65,11 @@ export async function PUT(request: NextRequest) {
   if (body.category !== undefined) updates.category = body.category;
   if (body.notes !== undefined) updates.notes = body.notes || null;
   if (body.payment_method !== undefined) updates.payment_method = body.payment_method;
+  if (body.receipt_url !== undefined) updates.receipt_url = body.receipt_url || null;
+  if (body.latitude !== undefined) updates.latitude = body.latitude;
+  if (body.longitude !== undefined) updates.longitude = body.longitude;
+  if (body.split_count !== undefined) updates.split_count = body.split_count;
+  if (body.subcategory !== undefined) updates.subcategory = body.subcategory || null;
 
   const { data, error } = await supabaseAdmin
     .from("personal_expenses")

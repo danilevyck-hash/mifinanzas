@@ -7,8 +7,10 @@ export function formatCurrency(amount: number): string {
 
 export function formatDate(dateStr: string): string {
   if (!dateStr) return "-";
-  const [year, month, day] = dateStr.split("-");
-  return `${day}/${month}/${year}`;
+  const date = new Date(dateStr + "T12:00:00");
+  const days = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
+  const [, month, day] = dateStr.split("-");
+  return `${days[date.getDay()]} ${day}/${month}`;
 }
 
 export const MONTH_NAMES = [

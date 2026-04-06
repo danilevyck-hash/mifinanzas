@@ -37,6 +37,7 @@ export async function PUT(request: NextRequest) {
   if (body.username) updates.username = body.username;
   if (body.display_name) updates.display_name = body.display_name;
   if (body.new_password) updates.password = await bcrypt.hash(body.new_password, 10);
+  if (body.email !== undefined) updates.email = body.email;
 
   if (body.username) {
     const { data: existing } = await supabaseAdmin
@@ -59,7 +60,7 @@ export async function PUT(request: NextRequest) {
     .from("users")
     .update(updates)
     .eq("id", authUserId)
-    .select("id, username, display_name")
+    .select("id, username, display_name, email")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

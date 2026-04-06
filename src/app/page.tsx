@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PersonalExpense, Category, CategoryBudget, PAYMENT_METHODS, getCategoryIcon } from "@/lib/supabase";
 import { formatCurrency, formatDate, MONTH_NAMES } from "@/lib/format";
@@ -61,6 +61,10 @@ function HomeContent() {
   const [importOpen, setImportOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [confettiShown, setConfettiShown] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [chartOpen, setChartOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const viewMonthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
   const dateFrom = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
@@ -299,6 +303,18 @@ function HomeContent() {
     }
   }, [confettiShown, hasBudgets, loading, isCurrentMonth, daysPassed, spentPct, expenses.length]);
 
+  // Close more menu when clicking outside
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [moreMenuOpen]);
+
   const methodData = useMemo(() => {
     const map: Record<string, number> = {};
     expenses.forEach((e) => { map[e.payment_method] = (map[e.payment_method] || 0) + e.amount; });
@@ -336,6 +352,7 @@ function HomeContent() {
   if (!user) return null;
 
   return (
+    <>
     <div className="space-y-5">
       {/* Month navigation */}
       <div className="flex items-center justify-center gap-2">
@@ -349,8 +366,9 @@ function HomeContent() {
           </svg>
         </button>
         <div className="text-center min-w-[180px]">
-          <h1 className="text-xl font-semibold text-primary dark:text-white">
+          <h1 className="text-xl font-semibold text-primary dark:text-white flex items-center justify-center">
             {MONTH_NAMES[viewMonth]} {viewYear}
+            {isCurrentMonth && <span className="inline-block w-2 h-2 bg-accent rounded-full ml-1.5 animate-pulse" />}
           </h1>
           {!isCurrentMonth && (
             <button onClick={() => router.push("/")} className="text-xs text-accent hover:text-accent-light transition-colors">
@@ -373,17 +391,17 @@ function HomeContent() {
       {loading ? (
         <KPISkeleton />
       ) : hasBudgets ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3">
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gastado</p>
-            <p className="text-2xl font-semibold text-primary dark:text-white mt-1">{formatCurrency(totalMonth)}</p>
+            <p className="text-lg sm:text-2xl font-semibold text-primary dark:text-white mt-1">{formatCurrency(totalMonth)}</p>
             <p className={`text-xs mt-1 ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-[#1e3a5f]"}`}>
               {Math.round(spentPct)}% del presupuesto · {expenses.length} gasto{expenses.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3">
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Disponible</p>
-            <p className={`text-2xl font-semibold mt-1 ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
+            <p className={`text-lg sm:text-2xl font-semibold mt-1 ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
               {available < 0 ? `-${formatCurrency(Math.abs(available))} por encima` : formatCurrency(available)}
             </p>
             {isCurrentMonth && (
@@ -392,9 +410,9 @@ function HomeContent() {
               </p>
             )}
           </div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3">
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Promedio diario</p>
-            <p className="text-2xl font-semibold text-primary dark:text-white mt-1">{formatCurrency(avgDaily)}</p>
+            <p className="text-lg sm:text-2xl font-semibold text-primary dark:text-white mt-1">{formatCurrency(avgDaily)}</p>
             {isCurrentMonth && daysRemaining > 0 && (
               <p className={`text-xs mt-1 ${avgDaily > targetDaily ? "text-amber-500" : "text-green-500"}`}>
                 target: {formatCurrency(targetDaily)}/dia
@@ -418,171 +436,8 @@ function HomeContent() {
         </div>
       )}
 
-      {/* Category breakdown — Apple Storage style */}
-      {loading ? (
-        <CategorySkeleton />
-      ) : categoryData.length > 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
-          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Por Categoria</h2>
-          <div className="space-y-4">
-            {sortedCategoryData.map((cat) => {
-              const budget = budgetMap[cat.name];
-              const hasBudget = budget != null && budget > 0;
-              const budgetPct = hasBudget ? (cat.total / budget) * 100 : 0;
-              const budgetBarColor = budgetPct >= 100 ? "#ef4444" : budgetPct >= 80 ? "#f59e0b" : "#1e3a5f";
-              const remaining = hasBudget ? budget - cat.total : 0;
-
-              return (
-                <div key={cat.name} className={!hasBudget ? "opacity-60" : ""}>
-                  <div className="flex items-center justify-between text-sm mb-1 gap-2">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                      <span className="font-medium text-primary dark:text-white">{getCategoryIcon(cat.name)} {cat.name}</span>
-                      <button
-                        onClick={() => { setBudgetCategory(cat.name); setBudgetModalOpen(true); }}
-                        className="text-muted dark:text-gray-400 hover:text-accent transition-colors"
-                        title="Configurar presupuesto"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <span className="text-muted dark:text-gray-400 text-xs truncate ml-2">
-                      {hasBudget ? `${formatCurrency(cat.total)} / ${formatCurrency(budget)}` : formatCurrency(cat.total)}
-                    </span>
-                  </div>
-                  {hasBudget ? (
-                    <>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }}
-                        />
-                      </div>
-                      <p className={`text-xs mt-1 ${
-                        budgetPct >= 100 ? "text-red-500" : budgetPct >= 80 ? "text-amber-500" : "text-gray-500 dark:text-gray-400"
-                      }`}>
-                        {budgetPct >= 100
-                          ? `${formatCurrency(Math.abs(remaining))} por encima del presupuesto`
-                          : budgetPct >= 80
-                            ? `Cuidado — solo quedan ${formatCurrency(remaining)}`
-                            : `Te quedan ${formatCurrency(remaining)}`}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Sin presupuesto configurado</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-4 flex rounded-full h-4 overflow-hidden">
-            {categoryData.map((cat) => (
-              <div key={cat.name} className="h-full transition-all duration-500"
-                style={{ width: `${cat.pct}%`, backgroundColor: cat.color, minWidth: cat.pct > 0 ? "4px" : "0" }}
-                title={`${cat.name}: ${cat.pct.toFixed(1)}%`} />
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-3 mt-3 justify-center">
-            {categoryData.map((cat) => (
-              <div key={cat.name} className="flex items-center gap-1.5 text-xs">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                <span className="text-muted dark:text-gray-400">{getCategoryIcon(cat.name)} {cat.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Daily spending chart */}
-      {expenses.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
-          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Tendencia diaria</h2>
-          <DailyChart expenses={expenses} daysInMonth={lastDay} budgetTotal={hasBudgets ? budgetTotal : undefined} />
-        </div>
-      )}
-
-      {/* Payment method breakdown */}
-      {methodData.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
-          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Por Metodo de Pago</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {methodData.map((m) => (
-              <div key={m.name} className="bg-surface dark:bg-gray-800 rounded-xl p-3 text-center">
-                <p className="text-xs text-muted dark:text-gray-400 uppercase">{m.name}</p>
-                <p className="text-lg font-bold text-primary dark:text-white">{formatCurrency(m.total)}</p>
-                <p className="text-xs text-muted dark:text-gray-400">{m.pct.toFixed(0)}%</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Trend KPIs */}
-      {hasTrendData && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">vs. mes anterior</p>
-            {!prevMonthData.hasData ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Sin datos previos</p>
-            ) : prevMonthData.total < 50 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Mes anterior: {formatCurrency(prevMonthData.total)} (datos insuficientes)</p>
-            ) : (() => {
-              const diff = totalMonth - prevMonthData.total;
-              const changePct = (diff / prevMonthData.total) * 100;
-              const isMore = diff > 0;
-              return (
-                <>
-                  <p className={`text-2xl font-semibold mt-1 ${isMore ? "text-red-500" : "text-green-500"}`}>
-                    {isMore ? "+" : ""}{Math.round(changePct)}%
-                  </p>
-                  <p className={`text-xs mt-1 ${isMore ? "text-red-400" : "text-green-400"}`}>
-                    {isMore ? `gastaste ${formatCurrency(diff)} mas` : `ahorraste ${formatCurrency(Math.abs(diff))}`}
-                  </p>
-                </>
-              );
-            })()}
-          </div>
-          {dominantCategory && expenses.length > 0 && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoria dominante</p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: dominantCategory.color }} />
-                <p className="text-2xl font-semibold text-primary dark:text-white">{dominantCategory.name}</p>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {dominantCategory.streak <= 1 ? "este mes" : `${dominantCategory.streak} meses seguidos`}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Action buttons */}
+      {/* Action buttons — Exportar + Mas menu */}
       <div className="flex flex-wrap justify-end gap-2">
-        <button onClick={() => setRecurringOpen(true)}
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-1.5 min-h-[44px]">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Recurrentes
-        </button>
-        <button onClick={() => setIncomeOpen(true)}
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-1.5 min-h-[44px]">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Ingresos
-        </button>
-        <button onClick={() => setImportOpen(true)}
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-1.5 min-h-[44px]">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-          Importar
-        </button>
         <button onClick={() => setExportOpen(true)}
           className="bg-white dark:bg-gray-900 border-2 border-primary text-primary dark:text-white hover:bg-primary hover:text-white font-semibold px-5 py-3 rounded-xl shadow-sm dark:shadow-gray-900/20 transition-colors flex items-center gap-2 min-h-[48px]">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -590,10 +445,22 @@ function HomeContent() {
           </svg>
           Exportar
         </button>
-        <button onClick={() => { setEditing(null); setModalOpen(true); }}
-          className="bg-accent hover:bg-accent-light text-white font-semibold px-6 py-3 rounded-xl shadow-sm dark:shadow-gray-900/20 transition-colors flex items-center gap-2 min-h-[48px]">
-          <span className="text-xl leading-none">+</span> Nuevo Gasto
-        </button>
+        <div className="relative" ref={moreMenuRef}>
+          <button onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+            className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-1.5 min-h-[44px]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
+            </svg>
+            Mas
+          </button>
+          {moreMenuOpen && (
+            <div className="absolute bottom-full mb-2 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-30 min-w-[160px]">
+              <button onClick={() => { setRecurringOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Recurrentes</button>
+              <button onClick={() => { setIncomeOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Ingresos</button>
+              <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Importar CSV</button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Expense list */}
@@ -630,36 +497,44 @@ function HomeContent() {
           </div>
         ) : (
           <>
-            {/* Search and filter bar */}
+            {/* Collapsible search and filter bar */}
             {expenses.length >= 2 && (
-              <div className="flex flex-wrap gap-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar por notas o categoria..."
-                  className="flex-1 min-w-[180px] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-sm"
-                />
-                <select
-                  value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value)}
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-900 transition-shadow text-sm"
-                >
-                  <option value="">Todas</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={filterMethod}
-                  onChange={(e) => setFilterMethod(e.target.value)}
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-900 transition-shadow text-sm"
-                >
-                  <option value="">Todos</option>
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+              <div className="space-y-2">
+                <button onClick={() => setShowSearch(!showSearch)} className="flex items-center gap-1.5 text-sm text-muted dark:text-gray-400 hover:text-primary dark:hover:text-white transition-colors min-h-[44px] px-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  Filtrar
+                </button>
+                {showSearch && (
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Buscar por notas o categoria..."
+                      className="flex-1 min-w-[180px] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-sm"
+                    />
+                    <select
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                      className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-900 transition-shadow text-sm"
+                    >
+                      <option value="">Todas</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={filterMethod}
+                      onChange={(e) => setFilterMethod(e.target.value)}
+                      className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-900 transition-shadow text-sm"
+                    >
+                      <option value="">Todos</option>
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 
@@ -782,6 +657,148 @@ function HomeContent() {
         )}
       </div>
 
+      {/* Category breakdown — Apple Storage style */}
+      {loading ? (
+        <CategorySkeleton />
+      ) : categoryData.length > 0 ? (
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
+          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Por Categoria</h2>
+          <div className="space-y-4">
+            {sortedCategoryData.map((cat) => {
+              const budget = budgetMap[cat.name];
+              const hasBudget = budget != null && budget > 0;
+              const budgetPct = hasBudget ? (cat.total / budget) * 100 : 0;
+              const budgetBarColor = budgetPct >= 100 ? "#ef4444" : budgetPct >= 80 ? "#f59e0b" : "#1e3a5f";
+              const remaining = hasBudget ? budget - cat.total : 0;
+
+              return (
+                <div key={cat.name} className={!hasBudget ? "opacity-60" : ""}>
+                  <div className="flex items-center justify-between text-sm mb-1 gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                      <span className="font-medium text-primary dark:text-white">{getCategoryIcon(cat.name)} {cat.name}</span>
+                      <button
+                        onClick={() => { setBudgetCategory(cat.name); setBudgetModalOpen(true); }}
+                        className="text-muted dark:text-gray-400 hover:text-accent transition-colors"
+                        title="Configurar presupuesto"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <span className="text-muted dark:text-gray-400 text-xs truncate ml-2">
+                      {hasBudget ? `${formatCurrency(cat.total)} / ${formatCurrency(budget)}` : formatCurrency(cat.total)}
+                    </span>
+                  </div>
+                  {hasBudget ? (
+                    <>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }}
+                        />
+                      </div>
+                      <p className={`text-xs mt-1 ${
+                        budgetPct >= 100 ? "text-red-500" : budgetPct >= 80 ? "text-amber-500" : "text-gray-500 dark:text-gray-400"
+                      }`}>
+                        {budgetPct >= 100
+                          ? `${formatCurrency(Math.abs(remaining))} por encima del presupuesto`
+                          : budgetPct >= 80
+                            ? `Cuidado — solo quedan ${formatCurrency(remaining)}`
+                            : `Te quedan ${formatCurrency(remaining)}`}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Sin presupuesto configurado</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 flex rounded-full h-4 overflow-hidden">
+            {categoryData.map((cat) => (
+              <div key={cat.name} className="h-full transition-all duration-500"
+                style={{ width: `${cat.pct}%`, backgroundColor: cat.color, minWidth: cat.pct > 0 ? "4px" : "0" }}
+                title={`${cat.name}: ${cat.pct.toFixed(1)}%`} />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-3 mt-3 justify-center">
+            {categoryData.map((cat) => (
+              <div key={cat.name} className="flex items-center gap-1.5 text-xs">
+                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                <span className="text-muted dark:text-gray-400">{getCategoryIcon(cat.name)} {cat.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Daily spending chart — collapsible */}
+      {expenses.length > 0 && (
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
+          <button
+            onClick={() => setChartOpen(!chartOpen)}
+            className="flex items-center justify-between w-full text-left"
+          >
+            <h2 className="text-base font-semibold text-primary dark:text-white">Tendencia diaria</h2>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`h-5 w-5 text-muted dark:text-gray-400 transition-transform duration-200 ${chartOpen ? "rotate-180" : ""}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {chartOpen && (
+            <div className="mt-3">
+              <DailyChart expenses={expenses} daysInMonth={lastDay} budgetTotal={hasBudgets ? budgetTotal : undefined} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Trend KPIs */}
+      {hasTrendData && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">vs. mes anterior</p>
+            {!prevMonthData.hasData ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Sin datos previos</p>
+            ) : prevMonthData.total < 50 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Mes anterior: {formatCurrency(prevMonthData.total)} (datos insuficientes)</p>
+            ) : (() => {
+              const diff = totalMonth - prevMonthData.total;
+              const changePct = (diff / prevMonthData.total) * 100;
+              const isMore = diff > 0;
+              return (
+                <>
+                  <p className={`text-2xl font-semibold mt-1 ${isMore ? "text-red-500" : "text-green-500"}`}>
+                    {isMore ? "+" : ""}{Math.round(changePct)}%
+                  </p>
+                  <p className={`text-xs mt-1 ${isMore ? "text-red-400" : "text-green-400"}`}>
+                    {isMore ? `gastaste ${formatCurrency(diff)} mas` : `ahorraste ${formatCurrency(Math.abs(diff))}`}
+                  </p>
+                </>
+              );
+            })()}
+          </div>
+          {dominantCategory && expenses.length > 0 && (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoria dominante</p>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: dominantCategory.color }} />
+                <p className="text-2xl font-semibold text-primary dark:text-white">{dominantCategory.name}</p>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {dominantCategory.streak <= 1 ? "este mes" : `${dominantCategory.streak} meses seguidos`}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <ConfirmModal
         isOpen={confirmDeleteId !== null}
         onClose={() => setConfirmDeleteId(null)}
@@ -826,5 +843,17 @@ function HomeContent() {
       />
       <Confetti show={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>
+
+    {/* Floating Action Button */}
+    <button
+      onClick={() => { setEditing(null); setModalOpen(true); }}
+      className="fixed bottom-24 sm:bottom-8 right-4 sm:right-8 z-40 w-14 h-14 bg-accent hover:bg-accent-light text-white rounded-full shadow-lg flex items-center justify-center transition-all active:scale-95"
+      aria-label="Nuevo Gasto"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+      </svg>
+    </button>
+    </>
   );
 }

@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
+import { useTheme } from "@/lib/theme";
 
 export default function CuentaPage() {
   const { user, logout, authFetch } = useAuth();
   const { toast } = useToast();
+  const { dark, toggle } = useTheme();
   const [username, setUsername] = useState(user?.username || "");
   const [displayName, setDisplayName] = useState(user?.display_name || "");
+  const [email, setEmail] = useState(user?.email || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,6 +44,7 @@ export default function CuentaPage() {
       };
       if (username !== user.username) body.username = username;
       if (displayName !== user.display_name) body.display_name = displayName;
+      if (email !== (user.email || "")) body.email = email;
       if (newPassword) body.new_password = newPassword;
 
       const res = await authFetch("/api/auth/update", {
@@ -75,6 +79,29 @@ export default function CuentaPage() {
     <div className="max-w-md mx-auto space-y-6">
       <h1 className="text-xl font-semibold text-primary dark:text-white text-center">Mi Cuenta</h1>
 
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-primary dark:text-white">Modo oscuro</p>
+          <p className="text-xs text-muted dark:text-gray-400">Cambiar apariencia de la app</p>
+        </div>
+        <button
+          onClick={toggle}
+          className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${dark ? "bg-accent" : "bg-gray-300 dark:bg-gray-600"}`}
+        >
+          <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-white shadow transition-transform ${dark ? "translate-x-6" : "translate-x-1"}`}>
+            {dark ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            )}
+          </span>
+        </button>
+      </div>
+
       <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5 space-y-4">
         <div>
           <label className="block text-sm font-medium text-primary dark:text-white mb-1">Nombre</label>
@@ -95,6 +122,17 @@ export default function CuentaPage() {
             onChange={(e) => setUsername(e.target.value)}
             className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
             required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-primary dark:text-white mb-1">Email (opcional)</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+            placeholder="tu@email.com"
           />
         </div>
 

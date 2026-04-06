@@ -16,7 +16,12 @@ export default function Navbar() {
       <nav className="bg-primary border-b-2 border-accent">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
-            <Link href="/" className="text-white font-semibold text-lg tracking-tight">
+            <Link href="/" className="text-white font-semibold text-lg tracking-tight flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 110-6h.008C18.318 3.75 21 6.432 21 9.75v2.25z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.75C3 6.432 5.682 3.75 9 3.75h.008A3 3 0 019 9.75H5.25A2.25 2.25 0 003 12v6a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18v-6" />
+                <circle cx="16.5" cy="12" r="1" fill="currentColor" />
+              </svg>
               MiFinanzas
             </Link>
             <div className="flex items-center gap-1">
@@ -121,22 +126,6 @@ export default function Navbar() {
             </svg>
             <span className="text-[10px] font-medium mt-0.5">Cuenta</span>
           </Link>
-          {/* Dark mode toggle - mobile */}
-          <button
-            onClick={toggle}
-            className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors text-muted dark:text-gray-400`}
-          >
-            {dark ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-            <span className="text-[10px] font-medium mt-0.5">Tema</span>
-          </button>
         </div>
       </div>
     </>
