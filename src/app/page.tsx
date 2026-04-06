@@ -272,10 +272,14 @@ function HomeContent() {
   }, [allExpenses, viewMonth, viewYear, isCurrentMonth, now, lastDay]);
 
 
-  // Budget alerts on load
+  // Budget alerts — once per day max
   useEffect(() => {
     if (alertsShown || categoryData.length === 0 || budgets.length === 0) return;
+    const today = new Date().toISOString().split("T")[0];
+    const lastAlert = localStorage.getItem("mifinanzas_alerts_date");
+    if (lastAlert === today) { setAlertsShown(true); return; }
     setAlertsShown(true);
+    localStorage.setItem("mifinanzas_alerts_date", today);
     let count = 0;
     for (const cat of sortedCategoryData) {
       const budget = budgetMap[cat.name];
@@ -459,6 +463,58 @@ function HomeContent() {
           })()}
         </div>
       )}
+
+      {/* Category breakdown — Apple Storage style */}
+      {loading ? (
+        <CategorySkeleton />
+      ) : categoryData.length > 0 ? (
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
+          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Por Categoria</h2>
+          <div className="space-y-4">
+            {sortedCategoryData.map((cat) => {
+              const budget = budgetMap[cat.name];
+              const hasBudget = budget != null && budget > 0;
+              const budgetPct = hasBudget ? (cat.total / budget) * 100 : 0;
+              const budgetBarColor = budgetPct >= 100 ? "#ef4444" : budgetPct >= 80 ? "#f59e0b" : "#1e3a5f";
+              const remaining = hasBudget ? budget - cat.total : 0;
+
+              return (
+                <div key={cat.name} className={!hasBudget ? "opacity-60" : ""}>
+                  <div className="flex items-center justify-between text-sm mb-1 gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                      <span className="font-medium text-primary dark:text-white">{iconMap[cat.name] || getCategoryIcon(cat.name)} {cat.name}</span>
+                    </div>
+                    <span className="text-muted dark:text-gray-400 text-xs truncate ml-2">
+                      {hasBudget ? `${formatCurrency(cat.total)} / ${formatCurrency(budget)}` : formatCurrency(cat.total)}
+                    </span>
+                  </div>
+                  {hasBudget ? (
+                    <>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }} />
+                      </div>
+                      <p className={`text-xs mt-1 ${budgetPct >= 100 ? "text-red-500" : budgetPct >= 80 ? "text-amber-500" : "text-gray-500 dark:text-gray-400"}`}>
+                        {budgetPct >= 100 ? `${formatCurrency(Math.abs(remaining))} por encima` : budgetPct >= 80 ? `Cuidado — quedan ${formatCurrency(remaining)}` : `Te quedan ${formatCurrency(remaining)}`}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Sin presupuesto</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 flex rounded-full h-4 overflow-hidden">
+            {categoryData.map((cat) => (
+              <div key={cat.name} className="h-full transition-all duration-500"
+                style={{ width: `${cat.pct}%`, backgroundColor: cat.color, minWidth: cat.pct > 0 ? "4px" : "0" }}
+                title={`${cat.name}: ${cat.pct.toFixed(1)}%`} />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {/* Action buttons — Exportar + Share + Mas menu */}
       <div className="flex flex-wrap justify-end gap-2">
@@ -733,85 +789,6 @@ function HomeContent() {
           </>
         )}
       </div>
-
-      {/* Category breakdown — Apple Storage style */}
-      {loading ? (
-        <CategorySkeleton />
-      ) : categoryData.length > 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
-          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Por Categoria</h2>
-          <div className="space-y-4">
-            {sortedCategoryData.map((cat) => {
-              const budget = budgetMap[cat.name];
-              const hasBudget = budget != null && budget > 0;
-              const budgetPct = hasBudget ? (cat.total / budget) * 100 : 0;
-              const budgetBarColor = budgetPct >= 100 ? "#ef4444" : budgetPct >= 80 ? "#f59e0b" : "#1e3a5f";
-              const remaining = hasBudget ? budget - cat.total : 0;
-
-              return (
-                <div key={cat.name} className={!hasBudget ? "opacity-60" : ""}>
-                  <div className="flex items-center justify-between text-sm mb-1 gap-2">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                      <span className="font-medium text-primary dark:text-white">{iconMap[cat.name] || getCategoryIcon(cat.name)} {cat.name}</span>
-                      <button
-                        onClick={() => { setBudgetCategory(cat.name); setBudgetModalOpen(true); }}
-                        className="text-muted dark:text-gray-400 hover:text-accent transition-colors"
-                        title="Configurar presupuesto"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <span className="text-muted dark:text-gray-400 text-xs truncate ml-2">
-                      {hasBudget ? `${formatCurrency(cat.total)} / ${formatCurrency(budget)}` : formatCurrency(cat.total)}
-                    </span>
-                  </div>
-                  {hasBudget ? (
-                    <>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }}
-                        />
-                      </div>
-                      <p className={`text-xs mt-1 ${
-                        budgetPct >= 100 ? "text-red-500" : budgetPct >= 80 ? "text-amber-500" : "text-gray-500 dark:text-gray-400"
-                      }`}>
-                        {budgetPct >= 100
-                          ? `${formatCurrency(Math.abs(remaining))} por encima del presupuesto`
-                          : budgetPct >= 80
-                            ? `Cuidado — solo quedan ${formatCurrency(remaining)}`
-                            : `Te quedan ${formatCurrency(remaining)}`}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Sin presupuesto configurado</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-4 flex rounded-full h-4 overflow-hidden">
-            {categoryData.map((cat) => (
-              <div key={cat.name} className="h-full transition-all duration-500"
-                style={{ width: `${cat.pct}%`, backgroundColor: cat.color, minWidth: cat.pct > 0 ? "4px" : "0" }}
-                title={`${cat.name}: ${cat.pct.toFixed(1)}%`} />
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-3 mt-3 justify-center">
-            {categoryData.map((cat) => (
-              <div key={cat.name} className="flex items-center gap-1.5 text-xs">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                <span className="text-muted dark:text-gray-400">{iconMap[cat.name] || getCategoryIcon(cat.name)} {cat.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
 
       <ConfirmModal
         isOpen={confirmDeleteId !== null}
