@@ -82,10 +82,8 @@ export async function DELETE(request: NextRequest) {
   await supabaseAdmin.from("categories").delete().eq("user_id", userId);
   await supabaseAdmin.from("category_budgets").delete().eq("user_id", userId);
   await supabaseAdmin.from("recurring_expenses").delete().eq("user_id", userId);
-  await supabaseAdmin.from("income").delete().eq("user_id", userId);
-  await supabaseAdmin.from("savings_goals").delete().eq("user_id", userId);
+
   await supabaseAdmin.from("user_preferences").delete().eq("user_id", userId);
-  await supabaseAdmin.from("achievements").delete().eq("user_id", userId);
   await supabaseAdmin.from("users").delete().eq("id", userId);
 
   return NextResponse.json({ success: true });

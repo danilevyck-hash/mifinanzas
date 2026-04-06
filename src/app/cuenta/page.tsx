@@ -8,7 +8,7 @@ import { Category, CategoryBudget } from "@/lib/supabase";
 import CategoryEditorModal from "@/components/CategoryEditorModal";
 import BulkBudgetModal from "@/components/BulkBudgetModal";
 import RecurringExpensesModal from "@/components/RecurringExpensesModal";
-import SavingsGoalsModal from "@/components/SavingsGoalsModal";
+
 
 type Section = "perfil_edit" | "seguridad" | "moneda" | "formato_fecha" | null;
 
@@ -44,7 +44,7 @@ export default function CuentaPage() {
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const [bulkBudgetOpen, setBulkBudgetOpen] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
-  const [savingsOpen, setSavingsOpen] = useState(false);
+
 
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -214,8 +214,7 @@ export default function CuentaPage() {
         <Cell label="Presupuestos" value={`${budgets.length} de ${categories.length}`} onClick={() => setBulkBudgetOpen(true)} />
         <Divider />
         <Cell label="Gastos recurrentes" onClick={() => setRecurringOpen(true)} />
-        <Divider />
-        <Cell label="Metas de ahorro" onClick={() => setSavingsOpen(true)} />
+
       </div>
 
       {/* Preferencias */}
@@ -344,7 +343,7 @@ export default function CuentaPage() {
       <CategoryEditorModal isOpen={categoryEditorOpen} onClose={() => setCategoryEditorOpen(false)} categories={categories} onUpdated={fetchCategories} />
       <BulkBudgetModal isOpen={bulkBudgetOpen} onClose={() => setBulkBudgetOpen(false)} categories={categories} budgets={budgets} month={currentMonth} onSaved={fetchBudgets} />
       <RecurringExpensesModal isOpen={recurringOpen} onClose={() => setRecurringOpen(false)} categories={categories} />
-      <SavingsGoalsModal isOpen={savingsOpen} onClose={() => setSavingsOpen(false)} />
+
     </div>
   );
 }

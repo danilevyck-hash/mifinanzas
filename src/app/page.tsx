@@ -10,11 +10,12 @@ import ExpenseModal from "@/components/ExpenseModal";
 import ExportModal from "@/components/ExportModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { KPISkeleton, CategorySkeleton } from "@/components/SkeletonLoader";
-import IncomeModal from "@/components/IncomeModal";
 import ImportModal from "@/components/ImportModal";
-import Confetti from "@/components/Confetti";
 import { usePreferences } from "@/lib/usePreferences";
+import dynamic from "next/dynamic";
 import React from "react";
+
+const DailyChart = dynamic(() => import("@/components/DailyChart"), { ssr: false });
 
 export default function Home() {
   return (
@@ -50,14 +51,10 @@ function HomeContent() {
   const [alertsShown, setAlertsShown] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [incomeOpen, setIncomeOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [confettiShown, setConfettiShown] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
-  const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [fabVisible, setFabVisible] = useState(true);
   const lastScrollY = useRef(0);
 
@@ -109,6 +106,29 @@ function HomeContent() {
   useEffect(() => { setLoading(true); fetchExpenses(); }, [fetchExpenses]);
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
   useEffect(() => { fetchBudgets(); setAlertsShown(false); }, [fetchBudgets]);
+
+  const recurringApplied = useRef(false);
+  useEffect(() => {
+    if (!user || !isCurrentMonth || recurringApplied.current) return;
+    recurringApplied.current = true;
+    (async () => {
+      try {
+        const res = await authFetch("/api/recurring-expenses/apply", {
+          method: "POST",
+          body: JSON.stringify({ month: viewMonthStr }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.created > 0) {
+            await fetchExpenses();
+            toast(`Se aplicaron ${data.created} gasto(s) recurrente(s)`, "success");
+          }
+        }
+      } catch {
+        // silent — recurring apply is best-effort
+      }
+    })();
+  }, [user, isCurrentMonth, viewMonthStr, authFetch, fetchExpenses, toast]);
 
   const totalMonth = expenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -268,6 +288,22 @@ function HomeContent() {
   const spentPct = budgetTotal > 0 ? (totalMonth / budgetTotal) * 100 : 0;
   const available = budgetTotal - totalMonth;
 
+  // Projection — daily avg × days in month
+  const dailyAvg = daysPassed > 0 ? totalMonth / daysPassed : 0;
+  const projected = dailyAvg * daysInMonth;
+
+  // Payment method breakdown
+  const paymentMethodData = useMemo(() => {
+    const map: Record<string, number> = {};
+    expenses.forEach((e) => {
+      const method = e.payment_method || "Otro";
+      map[method] = (map[method] || 0) + e.amount;
+    });
+    return Object.entries(map)
+      .map(([method, total]) => ({ method, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [expenses]);
+
   // Feature 3 — Trends (vs previous month, same period)
   const prevMonthData = useMemo(() => {
     let pm = viewMonth - 1;
@@ -316,15 +352,6 @@ function HomeContent() {
       }
     }
   }, [alertsShown, categoryData, sortedCategoryData, budgets, budgetMap, toast]);
-
-  // Confetti: show when viewing current month, have budgets, and under budget
-  useEffect(() => {
-    if (confettiShown || !hasBudgets || loading || !isCurrentMonth) return;
-    if (daysPassed >= 25 && spentPct < 100 && expenses.length > 0) {
-      setShowConfetti(true);
-      setConfettiShown(true);
-    }
-  }, [confettiShown, hasBudgets, loading, isCurrentMonth, daysPassed, spentPct, expenses.length]);
 
   // FAB hide on scroll down, show on scroll up
   useEffect(() => {
@@ -426,7 +453,33 @@ function HomeContent() {
         </button>
       </div>
 
-      {/* Budget KPIs + vs mes anterior — unified card */}
+      {/* vs mes anterior */}
+      {!loading && prevMonthData.hasData && prevMonthData.total >= 50 && (() => {
+        const diff = totalMonth - prevMonthData.total;
+        const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
+        const isMore = diff > 0;
+        return (
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-2">
+              <div className="p-4">
+                <p className="text-[11px] text-[#8E8E93] uppercase">Este mes</p>
+                <p className="text-[22px] font-semibold mt-1 leading-tight tabular-nums text-primary dark:text-white">{formatCurrency(totalMonth)}</p>
+              </div>
+              <div className="p-4 border-l border-[#C6C6C8]/20 dark:border-gray-800">
+                <p className="text-[11px] text-[#8E8E93] uppercase">Mes anterior</p>
+                <p className="text-[22px] font-semibold mt-1 leading-tight tabular-nums text-primary dark:text-white">{formatCurrency(prevMonthData.total)}</p>
+              </div>
+            </div>
+            <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-center">
+              <span className={`text-[13px] font-semibold ${isMore ? "text-red-500" : "text-green-500"}`}>
+                {isMore ? "↑" : "↓"} {isMore ? "+" : ""}{Math.round(changePct)}% ({isMore ? `+${formatCurrency(diff)}` : `-${formatCurrency(Math.abs(diff))}`})
+              </span>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Budget KPIs */}
       {loading ? (
         <KPISkeleton />
       ) : hasBudgets ? (
@@ -451,19 +504,14 @@ function HomeContent() {
               )}
             </div>
           </div>
-          {prevMonthData.hasData && prevMonthData.total >= 50 && (() => {
-            const diff = totalMonth - prevMonthData.total;
-            const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
-            const isMore = diff > 0;
-            return (
-              <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between">
-                <span className="text-[13px] text-[#8E8E93]">vs. mes anterior</span>
-                <span className={`text-[13px] font-semibold ${isMore ? "text-red-500" : "text-green-500"}`}>
-                  {isMore ? "+" : ""}{Math.round(changePct)}% ({isMore ? `+${formatCurrency(diff)}` : `-${formatCurrency(Math.abs(diff))}`})
-                </span>
-              </div>
-            );
-          })()}
+          {isCurrentMonth && daysPassed > 0 && expenses.length > 0 && (
+            <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between">
+              <span className="text-[13px] text-[#8E8E93]">Proyeccion fin de mes</span>
+              <span className={`text-[13px] font-semibold tabular-nums ${projected > budgetTotal ? "text-red-500" : "text-green-500"}`}>
+                {formatCurrency(projected)}
+              </span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
@@ -472,19 +520,21 @@ function HomeContent() {
             <p className="text-3xl font-bold text-primary dark:text-white mt-1 tabular-nums">{formatCurrency(totalMonth)}</p>
             <p className="text-[11px] text-[#8E8E93] mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
           </div>
-          {prevMonthData.hasData && prevMonthData.total >= 50 && (() => {
-            const diff = totalMonth - prevMonthData.total;
-            const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
-            const isMore = diff > 0;
-            return (
-              <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between">
-                <span className="text-[13px] text-[#8E8E93]">vs. mes anterior</span>
-                <span className={`text-[13px] font-semibold ${isMore ? "text-red-500" : "text-green-500"}`}>
-                  {isMore ? "+" : ""}{Math.round(changePct)}% ({isMore ? `+${formatCurrency(diff)}` : `-${formatCurrency(Math.abs(diff))}`})
-                </span>
-              </div>
-            );
-          })()}
+          {isCurrentMonth && daysPassed > 0 && expenses.length > 0 && (
+            <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between">
+              <span className="text-[13px] text-[#8E8E93]">Proyeccion fin de mes</span>
+              <span className="text-[13px] font-semibold tabular-nums text-primary dark:text-white">
+                {formatCurrency(projected)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Daily chart */}
+      {!loading && expenses.length > 0 && (
+        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4">
+          <DailyChart expenses={expenses} daysInMonth={lastDay} budgetTotal={hasBudgets ? budgetTotal : undefined} />
         </div>
       )}
 
@@ -505,18 +555,15 @@ function HomeContent() {
               return (
                 <div key={cat.name} className={idx > 0 ? "border-t border-[#C6C6C8]/20 dark:border-gray-800 ml-6 -mx-0" : ""}>
                   <div className={idx > 0 ? "-ml-6" : ""}>
-                    <button
-                      onClick={() => setExpandedCat(expandedCat === cat.name ? null : cat.name)}
-                      className="w-full flex items-center justify-between py-2.5 active:bg-[#E5E5EA]/50 dark:active:bg-gray-800/50 transition-colors"
-                    >
+                    <div className="flex items-center justify-between py-2.5">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
                         <span className="text-[15px] text-primary dark:text-white">{iconMap[cat.name] || getCategoryIcon(cat.name)} {cat.name}</span>
                       </div>
                       <span className="text-[15px] tabular-nums text-primary dark:text-white">{formatCurrency(cat.total)}</span>
-                    </button>
-                    {expandedCat === cat.name && hasBudget && (
-                      <div className="pb-2 animate-fade-in">
+                    </div>
+                    {hasBudget && (
+                      <div className="pb-2">
                         <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-full h-1.5 overflow-hidden mb-1">
                           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }} />
                         </div>
@@ -525,9 +572,6 @@ function HomeContent() {
                         </p>
                       </div>
                     )}
-                    {expandedCat === cat.name && !hasBudget && (
-                      <p className="text-[11px] text-[#8E8E93] pb-2 animate-fade-in">Sin limite configurado</p>
-                    )}
                   </div>
                 </div>
               );
@@ -535,6 +579,26 @@ function HomeContent() {
           </div>
         </div>
       ) : null}
+
+      {/* Payment method breakdown */}
+      {!loading && paymentMethodData.length > 1 && (
+        <div>
+          <p className="text-[13px] font-medium text-[#8E8E93] uppercase px-1 mb-2">Por Metodo de Pago</p>
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl px-4">
+            {paymentMethodData.map((pm, idx) => (
+              <div key={pm.method} className={idx > 0 ? "border-t border-[#C6C6C8]/20 dark:border-gray-800" : ""}>
+                <div className="flex items-center justify-between py-2.5">
+                  <span className="text-[15px] text-primary dark:text-white">{pm.method}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[15px] tabular-nums text-primary dark:text-white">{formatCurrency(pm.total)}</span>
+                    <span className="text-[11px] text-[#8E8E93] w-8 text-right">{totalMonth > 0 ? `${Math.round((pm.total / totalMonth) * 100)}%` : ""}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="flex items-center justify-between px-1">
@@ -765,18 +829,11 @@ function HomeContent() {
         defaultPaymentMethod={prefs.last_payment_method}
       />
       <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} expenses={allExpenses} categories={categories} />
-      <IncomeModal
-        isOpen={incomeOpen}
-        onClose={() => setIncomeOpen(false)}
-        onSave={() => { setIncomeOpen(false); }}
-        editingIncome={null}
-      />
       <ImportModal
         isOpen={importOpen}
         onClose={() => setImportOpen(false)}
         onComplete={() => { setImportOpen(false); fetchExpenses(); fetchAllExpenses(); }}
       />
-      <Confetti show={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>
 
     {/* Action sheet for "Mas" menu */}

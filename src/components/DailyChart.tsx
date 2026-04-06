@@ -6,12 +6,12 @@ import { formatCurrency } from "@/lib/format";
 import { useTheme } from "@/lib/theme";
 import {
   ResponsiveContainer,
-  AreaChart,
+  ComposedChart,
   Area,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
 } from "recharts";
 
 type Props = {
@@ -30,13 +30,19 @@ export default function DailyChart({ expenses, daysInMonth, budgetTotal }: Props
       dailyTotals[day] = (dailyTotals[day] || 0) + e.amount;
     });
 
+    const dailyPace = budgetTotal && budgetTotal > 0 ? budgetTotal / daysInMonth : undefined;
+
     let cumulative = 0;
     return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       cumulative += dailyTotals[day] || 0;
-      return { day, total: cumulative };
+      return {
+        day,
+        total: cumulative,
+        ...(dailyPace !== undefined && { pace: dailyPace * day }),
+      };
     });
-  }, [expenses, daysInMonth]);
+  }, [expenses, daysInMonth, budgetTotal]);
 
   const textColor = dark ? "#9CA3AF" : "#64748B";
   const gridColor = dark ? "#374151" : "#E2E8F0";
@@ -44,7 +50,7 @@ export default function DailyChart({ expenses, daysInMonth, budgetTotal }: Props
   return (
     <div className="w-full h-[200px]">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+        <ComposedChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#6366F1" stopOpacity={0.2} />
@@ -78,20 +84,6 @@ export default function DailyChart({ expenses, daysInMonth, budgetTotal }: Props
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             labelFormatter={(label: any) => `Dia ${label}`}
           />
-          {budgetTotal && budgetTotal > 0 && (
-            <ReferenceLine
-              y={budgetTotal}
-              stroke="#EF4444"
-              strokeDasharray="6 4"
-              strokeWidth={1.5}
-              label={{
-                value: "Presupuesto",
-                position: "insideTopRight",
-                fontSize: 10,
-                fill: "#EF4444",
-              }}
-            />
-          )}
           <Area
             type="monotone"
             dataKey="total"
@@ -99,7 +91,18 @@ export default function DailyChart({ expenses, daysInMonth, budgetTotal }: Props
             strokeWidth={2}
             fill="url(#colorTotal)"
           />
-        </AreaChart>
+          {budgetTotal && budgetTotal > 0 && (
+            <Line
+              type="linear"
+              dataKey="pace"
+              stroke="#EF4444"
+              strokeWidth={1.5}
+              strokeDasharray="6 4"
+              dot={false}
+              name="Ritmo ideal"
+            />
+          )}
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

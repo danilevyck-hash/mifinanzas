@@ -64,17 +64,6 @@ export type RecurringExpense = {
   created_at?: string;
 };
 
-export type Income = {
-  id: string;
-  user_id: number;
-  date: string;
-  amount: number;
-  source: string;
-  notes?: string;
-  is_recurring: boolean;
-  created_at?: string;
-};
-
 export const CATEGORY_ICONS: Record<string, string> = {
   "Casa": "\u{1F3E0}", "Hogar": "\u{1F3E0}", "Alquiler": "\u{1F3E0}",
   "Carro": "\u{1F697}", "Auto": "\u{1F697}", "Transporte": "\u{1F697}",
