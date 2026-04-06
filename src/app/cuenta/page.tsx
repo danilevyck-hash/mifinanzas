@@ -21,7 +21,7 @@ const CURRENCIES = [
 ];
 
 export default function CuentaPage() {
-  const { user, logout, authFetch } = useAuth();
+  const { user, logout, authFetch, refreshUser } = useAuth();
   const { toast } = useToast();
   const { dark, toggle } = useTheme();
 
@@ -96,7 +96,7 @@ export default function CuentaPage() {
       const res = await authFetch("/api/auth/update", { method: "PUT", body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { toast(data.error || "Error", "error"); return; }
-      localStorage.setItem("mifinanzas_user", JSON.stringify(data));
+      refreshUser(data);
       toast("Guardado");
       setOpenSection(null);
     } catch { toast("Error de conexion", "error"); }
@@ -113,10 +113,10 @@ export default function CuentaPage() {
       const res = await authFetch("/api/auth/update", { method: "PUT", body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) });
       const data = await res.json();
       if (!res.ok) { toast(data.error || "Error", "error"); return; }
-      toast("Contrasena actualizada");
+      toast("Contrasena actualizada. Cerrando sesion...");
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
       setOpenSection(null);
-      setTimeout(() => logout(), 1500);
+      setTimeout(() => logout(), 2000);
     } catch { toast("Error de conexion", "error"); }
     finally { setSaving(false); }
   };
@@ -314,7 +314,12 @@ export default function CuentaPage() {
               <p className="text-[13px] text-muted dark:text-gray-400 mt-2">Se eliminaran todos tus datos permanentemente. Esta accion no se puede deshacer.</p>
             </div>
             <div className="border-t border-gray-200 dark:border-gray-700">
-              <button onClick={() => { setShowDeleteConfirm(false); toast("Contacta soporte para eliminar tu cuenta"); }}
+              <button onClick={async () => {
+                setShowDeleteConfirm(false);
+                const res = await authFetch("/api/auth/update", { method: "DELETE" });
+                if (res.ok) { logout(); }
+                else { toast("Error al eliminar", "error"); }
+              }}
                 className="w-full py-3 text-[17px] text-red-500 font-medium border-b border-gray-200 dark:border-gray-700">
                 Eliminar
               </button>

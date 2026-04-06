@@ -2,20 +2,17 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { PersonalExpense, Category, CategoryBudget, PAYMENT_METHODS, getCategoryIcon } from "@/lib/supabase";
+import { PersonalExpense, Category, CategoryBudget, getCategoryIcon } from "@/lib/supabase";
 import { formatCurrency, formatDate, MONTH_NAMES } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import ExpenseModal from "@/components/ExpenseModal";
 import ExportModal from "@/components/ExportModal";
-import BudgetModal from "@/components/BudgetModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { KPISkeleton, CategorySkeleton } from "@/components/SkeletonLoader";
-import RecurringExpensesModal from "@/components/RecurringExpensesModal";
 import IncomeModal from "@/components/IncomeModal";
 import ImportModal from "@/components/ImportModal";
 import Confetti from "@/components/Confetti";
-import ShareButton from "@/components/ShareButton";
 import { usePreferences } from "@/lib/usePreferences";
 import React from "react";
 
@@ -50,14 +47,9 @@ function HomeContent() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
-  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
-  const [budgetCategory, setBudgetCategory] = useState("");
   const [alertsShown, setAlertsShown] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterMethod, setFilterMethod] = useState("");
-  const [recurringOpen, setRecurringOpen] = useState(false);
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -275,6 +267,12 @@ function HomeContent() {
   // Budget alerts — once per day max
   useEffect(() => {
     if (alertsShown || categoryData.length === 0 || budgets.length === 0) return;
+    if (typeof window !== "undefined") {
+      try {
+        const prefs = JSON.parse(localStorage.getItem("mifinanzas_prefs") || "{}");
+        if (prefs.budgetAlerts === false) { setAlertsShown(true); return; }
+      } catch {}
+    }
     const today = new Date().toISOString().split("T")[0];
     const lastAlert = localStorage.getItem("mifinanzas_alerts_date");
     if (lastAlert === today) { setAlertsShown(true); return; }
@@ -316,31 +314,15 @@ function HomeContent() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [moreMenuOpen]);
 
-  const methodData = useMemo(() => {
-    const map: Record<string, number> = {};
-    expenses.forEach((e) => { map[e.payment_method] = (map[e.payment_method] || 0) + e.amount; });
-    return Object.entries(map)
-      .map(([name, total]) => ({ name, total, pct: totalMonth > 0 ? (total / totalMonth) * 100 : 0 }))
-      .sort((a, b) => b.total - a.total);
-  }, [expenses, totalMonth]);
-
   const filteredExpenses = useMemo(() => {
-    let result = expenses;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter((e) =>
-        (e.notes && e.notes.toLowerCase().includes(q)) ||
-        e.category.toLowerCase().includes(q)
-      );
-    }
-    if (filterCategory) {
-      result = result.filter((e) => e.category === filterCategory);
-    }
-    if (filterMethod) {
-      result = result.filter((e) => e.payment_method === filterMethod);
-    }
-    return result;
-  }, [expenses, searchQuery, filterCategory, filterMethod]);
+    if (!searchQuery.trim()) return expenses;
+    const q = searchQuery.toLowerCase();
+    return expenses.filter((e) =>
+      (e.notes && e.notes.toLowerCase().includes(q)) ||
+      e.category.toLowerCase().includes(q) ||
+      e.payment_method.toLowerCase().includes(q)
+    );
+  }, [expenses, searchQuery]);
 
   const groupedExpenses = useMemo(() => {
     const groups: Record<string, PersonalExpense[]> = {};
@@ -412,17 +394,17 @@ function HomeContent() {
         <KPISkeleton />
       ) : hasBudgets ? (
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200/60 dark:border-gray-700/60 rounded-2xl p-3">
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gastado</p>
-            <p className="text-lg sm:text-2xl font-semibold text-primary dark:text-white mt-1">{formatCurrency(totalMonth)}</p>
-            <p className={`text-xs mt-1 ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-[#1e3a5f]"}`}>
-              {Math.round(spentPct)}% del presupuesto · {expenses.length} gasto{expenses.length !== 1 ? "s" : ""}
+            <p className="text-[28px] font-semibold text-primary dark:text-white mt-1 leading-tight">{formatCurrency(totalMonth)}</p>
+            <p className={`text-xs mt-1 ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-gray-500 dark:text-gray-400"}`}>
+              {Math.round(spentPct)}% del presupuesto
             </p>
           </div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200/60 dark:border-gray-700/60 rounded-2xl p-3">
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Disponible</p>
-            <p className={`text-lg sm:text-2xl font-semibold mt-1 ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
-              {available < 0 ? `-${formatCurrency(Math.abs(available))} por encima` : formatCurrency(available)}
+            <p className={`text-[28px] font-semibold mt-1 leading-tight ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
+              {available < 0 ? `-${formatCurrency(Math.abs(available))}` : formatCurrency(available)}
             </p>
             {isCurrentMonth && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -432,24 +414,16 @@ function HomeContent() {
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5 border-l-4 border-accent text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-5 border-l-4 border-accent text-center">
           <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
           <p className="text-3xl font-bold text-primary dark:text-white mt-1">{formatCurrency(totalMonth)}</p>
           <p className="text-sm text-muted dark:text-gray-400 mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
-          {expenses.length > 0 && categoryData.length > 0 && (
-            <button
-              onClick={() => { setBudgetCategory(categoryData[0].name); setBudgetModalOpen(true); }}
-              className="text-accent hover:text-accent-light text-xs font-medium mt-2 transition-colors"
-            >
-              Configurar presupuesto para ver KPIs
-            </button>
-          )}
         </div>
       )}
 
       {/* vs mes anterior — compact */}
       {prevMonthData.hasData && prevMonthData.total >= 50 && (
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-2 flex items-center justify-between">
+        <div className="border border-gray-200/60 dark:border-gray-700/60 rounded-xl px-4 py-2 flex items-center justify-between">
           <span className="text-xs text-muted dark:text-gray-400">vs. mes anterior</span>
           {(() => {
             const diff = totalMonth - prevMonthData.total;
@@ -468,7 +442,7 @@ function HomeContent() {
       {loading ? (
         <CategorySkeleton />
       ) : categoryData.length > 0 ? (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-5">
           <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Por Categoria</h2>
           <div className="space-y-4">
             {sortedCategoryData.map((cat) => {
@@ -506,38 +480,23 @@ function HomeContent() {
               );
             })}
           </div>
-          <div className="mt-4 flex rounded-full h-4 overflow-hidden">
-            {categoryData.map((cat) => (
-              <div key={cat.name} className="h-full transition-all duration-500"
-                style={{ width: `${cat.pct}%`, backgroundColor: cat.color, minWidth: cat.pct > 0 ? "4px" : "0" }}
-                title={`${cat.name}: ${cat.pct.toFixed(1)}%`} />
-            ))}
-          </div>
         </div>
       ) : null}
 
-      {/* Action buttons — Exportar + Share + Mas menu */}
-      <div className="flex flex-wrap justify-end gap-2">
-        <ShareButton totalMonth={totalMonth} categoryData={categoryData} month={viewMonth} year={viewYear} />
+      {/* Action buttons */}
+      <div className="flex justify-end gap-4">
         <button onClick={() => setExportOpen(true)}
-          className="bg-white dark:bg-gray-900 border-2 border-primary text-primary dark:text-white hover:bg-primary hover:text-white font-semibold px-5 py-3 rounded-xl shadow-sm dark:shadow-gray-900/20 transition-colors flex items-center gap-2 min-h-[48px]">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
+          className="text-blue-500 text-sm font-medium min-h-[44px] transition-colors hover:text-blue-600">
           Exportar
         </button>
         <div className="relative" ref={moreMenuRef}>
           <button onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-            className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-1.5 min-h-[44px]">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
-            </svg>
+            className="text-blue-500 text-sm font-medium min-h-[44px] transition-colors hover:text-blue-600">
             Mas
           </button>
           {moreMenuOpen && (
             <div className="absolute bottom-full mb-2 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-30 min-w-[160px]">
-              <button onClick={() => { setRecurringOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Recurrentes</button>
-              <button onClick={() => { setIncomeOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Ingresos</button>
+              <button onClick={() => { setExportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Exportar</button>
               <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Importar CSV</button>
             </div>
           )}
@@ -547,27 +506,23 @@ function HomeContent() {
       {/* Expense list */}
       <div className="space-y-3">
         {loading ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-8 text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl  p-8 text-center">
             <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2" />
             <p className="text-muted dark:text-gray-400 text-sm">Cargando gastos...</p>
           </div>
         ) : expenses.length === 0 && categories.length === 0 ? (
           /* Onboarding banner for first-time users */
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-6 text-center">
-            <h2 className="text-xl font-semibold text-primary dark:text-white">Bienvenido a MiFinanzas</h2>
-            <p className="text-muted dark:text-gray-400 mt-1">Empieza registrando tu primer gasto</p>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 text-center">
+            <h2 className="text-xl font-semibold text-primary dark:text-white">Bienvenido</h2>
             <button
               onClick={() => { setEditing(null); setModalOpen(true); }}
-              className="bg-accent hover:bg-accent-light text-white font-semibold px-6 py-3 rounded-xl shadow-sm dark:shadow-gray-900/20 transition-colors mt-4 min-h-[48px]"
+              className="bg-accent hover:bg-accent-light text-white font-semibold px-6 py-3 rounded-xl transition-colors mt-4 min-h-[48px]"
             >
-              Agregar primer gasto
+              Agrega tu primer gasto
             </button>
-            <p className="text-sm text-muted dark:text-gray-400 mt-4">
-              1. Crea una categoria &rarr; 2. Registra un gasto &rarr; 3. Configura tu presupuesto
-            </p>
           </div>
         ) : expenses.length === 0 ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-8 text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl  p-8 text-center">
             <p className="text-muted dark:text-gray-400">Sin gastos este mes</p>
             <button
               onClick={() => { setEditing(null); setModalOpen(true); }}
@@ -586,41 +541,19 @@ function HomeContent() {
                   Filtrar
                 </button>
                 {showSearch && (
-                  <div className="flex flex-wrap gap-2">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Buscar por notas o categoria..."
-                      className="flex-1 min-w-[180px] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-sm"
-                    />
-                    <select
-                      value={filterCategory}
-                      onChange={(e) => setFilterCategory(e.target.value)}
-                      className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-900 transition-shadow text-sm"
-                    >
-                      <option value="">Todas</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.name}>{c.name}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={filterMethod}
-                      onChange={(e) => setFilterMethod(e.target.value)}
-                      className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-900 transition-shadow text-sm"
-                    >
-                      <option value="">Todos</option>
-                      {PAYMENT_METHODS.map((m) => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar notas, categoria, metodo..."
+                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow text-sm bg-white dark:bg-gray-900"
+                  />
                 )}
               </div>
             )}
 
             {filteredExpenses.length === 0 ? (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-8 text-center">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl  p-8 text-center">
                 <p className="text-muted dark:text-gray-400">Sin resultados para este filtro</p>
               </div>
             ) : (
@@ -638,51 +571,49 @@ function HomeContent() {
                     </p>
                   </div>
                   {group.items.map((e) => (
-                <div key={e.id} className={`bg-white dark:bg-gray-900 rounded-xl shadow-sm dark:shadow-gray-900/20 p-4 ${deletingId === e.id ? "opacity-50" : ""}`}>
+                <div key={e.id} className={`bg-white dark:bg-gray-900 rounded-xl p-4 ${deletingId === e.id ? "opacity-50" : ""}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className="inline-block text-xs font-medium px-2.5 py-0.5 rounded-full text-white flex-shrink-0"
-                          style={{ backgroundColor: colorMap[e.category] || "#6B7280" }}
-                        >
-                          {e.category}
-                        </span>
-                      </div>
-                      <p className="text-lg font-bold text-primary dark:text-white">{formatCurrency(e.amount)}</p>
-                      {e.notes && <p className="text-sm text-muted dark:text-gray-400 truncate mt-0.5">{e.notes}</p>}
-                      <p className="text-xs text-muted dark:text-gray-400 mt-1">{e.payment_method}</p>
+                      <p className="text-sm text-primary dark:text-white">
+                        <span className="mr-1">{iconMap[e.category] || getCategoryIcon(e.category)}</span>
+                        {e.category}
+                      </p>
+                      {e.notes && <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">{e.notes}</p>}
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{e.payment_method}</p>
                     </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => { setDuplicating(e); setModalOpen(true); }}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-accent hover:bg-accent/10 transition-colors"
-                        title="Duplicar"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => { setEditing(e); setModalOpen(true); }}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-primary dark:text-white hover:bg-surface dark:hover:bg-gray-800 transition-colors"
-                        title="Editar"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(e.id)}
-                        disabled={deletingId === e.id}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 transition-colors disabled:opacity-50"
-                        title="Eliminar"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                    <div className="flex items-start gap-2 flex-shrink-0">
+                      <p className="text-lg font-bold text-primary dark:text-white text-right">{formatCurrency(e.amount)}</p>
                     </div>
+                  </div>
+                  <div className="flex justify-end gap-1 mt-2 border-t border-gray-100 dark:border-gray-800 pt-2">
+                    <button
+                      onClick={() => { setDuplicating(e); setModalOpen(true); }}
+                      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-gray-400 hover:text-accent transition-colors"
+                      title="Duplicar"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => { setEditing(e); setModalOpen(true); }}
+                      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-gray-400 hover:text-primary dark:hover:text-white transition-colors"
+                      title="Editar"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(e.id)}
+                      disabled={deletingId === e.id}
+                      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                      title="Eliminar"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
                   ))}
@@ -691,7 +622,7 @@ function HomeContent() {
               {hasMoreDays && (
                 <button
                   onClick={() => setVisibleDays((v) => v + 5)}
-                  className="w-full py-3 text-sm text-accent hover:text-accent-light font-medium transition-colors"
+                  className="w-full py-2 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors"
                 >
                   Ver mas dias ({groupedExpenses.length - visibleDays} restantes)
                 </button>
@@ -699,7 +630,7 @@ function HomeContent() {
             </div>
 
             {/* Desktop table */}
-            <div className="hidden sm:block bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 overflow-hidden">
+            <div className="hidden sm:block bg-white dark:bg-gray-900 rounded-2xl  overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -778,7 +709,7 @@ function HomeContent() {
               {hasMoreDays && (
                 <button
                   onClick={() => setVisibleDays((v) => v + 5)}
-                  className="w-full py-3 text-sm text-accent hover:text-accent-light font-medium transition-colors"
+                  className="w-full py-2 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors"
                 >
                   Ver mas dias ({groupedExpenses.length - visibleDays} restantes)
                 </button>
@@ -810,19 +741,6 @@ function HomeContent() {
         defaultPaymentMethod={prefs.last_payment_method}
       />
       <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} expenses={allExpenses} categories={categories} />
-      <BudgetModal
-        isOpen={budgetModalOpen}
-        onClose={() => setBudgetModalOpen(false)}
-        category={budgetCategory}
-        month={viewMonthStr}
-        existingBudget={budgets.find((b) => b.category === budgetCategory) || null}
-        onSaved={fetchBudgets}
-      />
-      <RecurringExpensesModal
-        isOpen={recurringOpen}
-        onClose={() => setRecurringOpen(false)}
-        categories={categories}
-      />
       <IncomeModal
         isOpen={incomeOpen}
         onClose={() => setIncomeOpen(false)}

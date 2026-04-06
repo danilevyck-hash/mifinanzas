@@ -9,6 +9,7 @@ type AuthContextType = {
   logout: () => void;
   loading: boolean;
   authFetch: (url: string, options?: RequestInit) => Promise<Response>;
+  refreshUser: (updatedUser: User) => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   loading: true,
   authFetch: () => Promise.resolve(new Response()),
+  refreshUser: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -34,6 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     setLoading(false);
+  }, []);
+
+  const refreshUser = useCallback((updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem("mifinanzas_user", JSON.stringify(updatedUser));
   }, []);
 
   const logout = useCallback(() => {
@@ -82,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, authFetch }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, authFetch, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

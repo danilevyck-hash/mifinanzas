@@ -1,18 +1,31 @@
-export function formatCurrency(amount: number, symbol: string = "$"): string {
+export function formatCurrency(amount: number): string {
+  let symbol = "$";
+  if (typeof window !== "undefined") {
+    try {
+      const prefs = JSON.parse(localStorage.getItem("mifinanzas_prefs") || "{}");
+      const symbolMap: Record<string, string> = { USD: "$", PAB: "B/.", COP: "$", MXN: "$", EUR: "\u20AC" };
+      if (prefs.currency && symbolMap[prefs.currency]) symbol = symbolMap[prefs.currency];
+    } catch {}
+  }
   return symbol + amount.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
-export function formatDate(dateStr: string, format: string = "DD/MM"): string {
+export function formatDate(dateStr: string): string {
   if (!dateStr) return "-";
   const date = new Date(dateStr + "T12:00:00");
   const days = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
   const [, month, day] = dateStr.split("-");
-  if (format === "MM/DD") {
-    return `${days[date.getDay()]} ${month}/${day}`;
+  let format = "DD/MM";
+  if (typeof window !== "undefined") {
+    try {
+      const prefs = JSON.parse(localStorage.getItem("mifinanzas_prefs") || "{}");
+      if (prefs.dateFormat) format = prefs.dateFormat;
+    } catch {}
   }
+  if (format === "MM/DD") return `${days[date.getDay()]} ${month}/${day}`;
   return `${days[date.getDay()]} ${day}/${month}`;
 }
 
