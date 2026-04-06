@@ -48,11 +48,12 @@ export async function POST(request: NextRequest) {
 
   const { error } = await supabaseAdmin
     .from("users")
-    .insert(insertData);
+    .insert([insertData]);
 
   if (error) {
+    console.error("Register error:", error);
     return NextResponse.json(
-      { error: "Error al crear la cuenta" },
+      { error: error.message || "Error al crear la cuenta" },
       { status: 500 }
     );
   }

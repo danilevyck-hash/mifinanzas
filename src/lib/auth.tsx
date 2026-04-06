@@ -44,13 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const authFetch = useCallback(async (url: string, options?: RequestInit): Promise<Response> => {
     const token = localStorage.getItem("mifinanzas_token");
+    const isFormData = options?.body instanceof FormData;
+    const headers: Record<string, string> = {
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...((options?.headers as Record<string, string>) || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
     const res = await fetch(url, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(options?.headers || {}),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      headers,
     });
     if (res.status === 401) {
       logout();

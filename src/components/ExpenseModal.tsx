@@ -122,6 +122,14 @@ export default function ExpenseModal({
     setShowNewCategory(categories.length === 0);
     setNewCategoryName("");
     setShowSuggestions(false);
+    // Auto-capture location for new expenses
+    if (!editingExpense && !duplicateExpense && isOpen && typeof navigator !== "undefined" && "geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { setLatitude(pos.coords.latitude); setLongitude(pos.coords.longitude); },
+        () => { /* permission denied or error — silently skip */ },
+        { timeout: 5000, maximumAge: 60000 }
+      );
+    }
   }, [editingExpense, duplicateExpense, isOpen, categories, defaultCategory, defaultPaymentMethod, todayStr]);
 
   if (!isOpen) return null;
