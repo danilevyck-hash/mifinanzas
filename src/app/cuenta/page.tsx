@@ -29,8 +29,8 @@ export default function CuentaPage() {
       return;
     }
 
-    if (newPassword && newPassword.length < 4) {
-      toast("La contrasena debe tener al menos 4 caracteres", "error");
+    if (newPassword && newPassword.length < 8) {
+      toast("La contrasena debe tener al menos 8 caracteres", "error");
       return;
     }
 
@@ -73,66 +73,66 @@ export default function CuentaPage() {
 
   return (
     <div className="max-w-md mx-auto space-y-6">
-      <h1 className="text-xl font-semibold text-primary text-center">Mi Cuenta</h1>
+      <h1 className="text-xl font-semibold text-primary dark:text-white text-center">Mi Cuenta</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-primary mb-1">Nombre</label>
+          <label className="block text-sm font-medium text-primary dark:text-white mb-1">Nombre</label>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+            className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-primary mb-1">Usuario</label>
+          <label className="block text-sm font-medium text-primary dark:text-white mb-1">Usuario</label>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+            className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
             required
           />
         </div>
 
-        <hr className="border-gray-100" />
+        <hr className="border-gray-100 dark:border-gray-700" />
 
         <div>
-          <label className="block text-sm font-medium text-primary mb-1">Nueva Contrasena</label>
+          <label className="block text-sm font-medium text-primary dark:text-white mb-1">Nueva Contrasena</label>
           <input
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+            className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
             placeholder="Dejar vacio para no cambiar"
           />
         </div>
 
         {newPassword && (
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">Confirmar Nueva Contrasena</label>
+            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Confirmar Nueva Contrasena</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="Repite la nueva contrasena"
             />
           </div>
         )}
 
-        <hr className="border-gray-100" />
+        <hr className="border-gray-100 dark:border-gray-700" />
 
         <div>
-          <label className="block text-sm font-medium text-primary mb-1">Contrasena Actual *</label>
+          <label className="block text-sm font-medium text-primary dark:text-white mb-1">Contrasena Actual *</label>
           <input
             type="password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+            className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
             placeholder="Requerida para guardar cambios"
             required
           />
@@ -151,10 +151,14 @@ export default function CuentaPage() {
       <div className="sm:hidden">
         <button
           onClick={logout}
-          className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+          className="w-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
         >
           Cerrar Sesion
         </button>
+      </div>
+
+      <div className="text-center">
+        <a href="/privacidad" className="text-muted text-xs hover:underline">Politica de Privacidad</a>
       </div>
     </div>
   );

@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { dark, toggle } = useTheme();
 
   return (
     <>
@@ -52,6 +54,22 @@ export default function Navbar() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </Link>
+                {/* Dark mode toggle */}
+                <button
+                  onClick={toggle}
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-accent-light/60 hover:text-white transition-colors"
+                  title={dark ? "Modo claro" : "Modo oscuro"}
+                >
+                  {dark ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  )}
+                </button>
                 <button
                   onClick={logout}
                   className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-accent-light/60 hover:text-white transition-colors"
@@ -68,12 +86,12 @@ export default function Navbar() {
       </nav>
 
       {/* Bottom nav - mobile only */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe">
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50 pb-safe">
         <div className="flex items-center justify-around h-16">
           <Link
             href="/"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${
-              pathname === "/" ? "text-accent" : "text-muted"
+              pathname === "/" ? "text-accent" : "text-muted dark:text-gray-400"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -84,7 +102,7 @@ export default function Navbar() {
           <Link
             href="/resumen"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${
-              pathname === "/resumen" ? "text-accent" : "text-muted"
+              pathname === "/resumen" ? "text-accent" : "text-muted dark:text-gray-400"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -95,7 +113,7 @@ export default function Navbar() {
           <Link
             href="/cuenta"
             className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors ${
-              pathname === "/cuenta" ? "text-accent" : "text-muted"
+              pathname === "/cuenta" ? "text-accent" : "text-muted dark:text-gray-400"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -103,6 +121,22 @@ export default function Navbar() {
             </svg>
             <span className="text-[10px] font-medium mt-0.5">Cuenta</span>
           </Link>
+          {/* Dark mode toggle - mobile */}
+          <button
+            onClick={toggle}
+            className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] rounded-lg transition-colors text-muted dark:text-gray-400`}
+          >
+            {dark ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+            <span className="text-[10px] font-medium mt-0.5">Tema</span>
+          </button>
         </div>
       </div>
     </>

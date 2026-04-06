@@ -5,6 +5,7 @@
 body {
   font-family: system-ui, -apple-system, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  @apply bg-surface dark:bg-gray-950;
 }
 
 @keyframes slide-up {

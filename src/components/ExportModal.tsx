@@ -200,7 +200,7 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md animate-slide-up"
+        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl dark:shadow-gray-900/20 w-full sm:max-w-md animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
@@ -222,8 +222,8 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
                 onClick={() => setPreset(p.key)}
                 className={`px-3 py-3 rounded-xl text-sm font-medium transition-colors border-2 min-h-[48px] ${
                   preset === p.key
-                    ? "border-accent bg-accent/10 text-primary"
-                    : "border-gray-200 text-gray-500 hover:border-gray-300"
+                    ? "border-accent bg-accent/10 text-primary dark:text-white"
+                    : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600"
                 }`}
               >
                 {p.label}
@@ -234,22 +234,22 @@ export default function ExportModal({ isOpen, onClose, expenses }: Props) {
           {preset === "custom" && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Desde</label>
+                <label className="block text-sm font-medium text-primary dark:text-white mb-1">Desde</label>
                 <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent outline-none text-base" />
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent outline-none text-base bg-white dark:bg-gray-800 text-primary dark:text-white" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Hasta</label>
+                <label className="block text-sm font-medium text-primary dark:text-white mb-1">Hasta</label>
                 <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent outline-none text-base" />
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent outline-none text-base bg-white dark:bg-gray-800 text-primary dark:text-white" />
               </div>
             </div>
           )}
 
-          <div className="bg-surface rounded-xl p-4 text-center space-y-1">
-            <p className="text-xs text-muted">{rangeLabel}</p>
-            <p className="text-primary font-medium">{filtered.length} gasto{filtered.length !== 1 ? "s" : ""} a exportar</p>
-            <p className="text-sm text-muted">Total: {formatCurrency(totalAmount)}</p>
+          <div className="bg-surface dark:bg-gray-800 rounded-xl p-4 text-center space-y-1">
+            <p className="text-xs text-muted dark:text-gray-400">{rangeLabel}</p>
+            <p className="text-primary dark:text-white font-medium">{filtered.length} gasto{filtered.length !== 1 ? "s" : ""} a exportar</p>
+            <p className="text-sm text-muted dark:text-gray-400">Total: {formatCurrency(totalAmount)}</p>
           </div>
 
           <div className="flex gap-3 pt-2">

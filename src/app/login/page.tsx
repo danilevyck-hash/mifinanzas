@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-12 text-muted">Cargando...</div>}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const registered = searchParams.get("registered") === "1";
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,44 +38,49 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-sm w-full max-w-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 w-full max-w-sm overflow-hidden">
         <div className="bg-primary p-6 text-center">
           <h1 className="text-2xl font-bold text-white">MiFinanzas</h1>
           <p className="text-accent-light text-sm mt-1">Control de gastos personales</p>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {registered && !error && (
+            <div className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm rounded-xl px-4 py-2 text-center">
+              Cuenta creada exitosamente. Inicia sesion.
+            </div>
+          )}
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 text-center">
+            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded-xl px-4 py-2 text-center">
               {error}
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">Usuario</label>
+            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Usuario</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="Ingresa tu usuario"
               required
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">Contraseña</label>
+            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Contraseña</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow"
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 pr-11 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow bg-white dark:bg-gray-800 text-primary dark:text-white"
                 placeholder="Ingresa tu contraseña"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted dark:text-gray-400 hover:text-primary dark:hover:text-white transition-colors"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -89,6 +104,11 @@ export default function LoginPage() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
+        <div className="px-6 pb-5 text-center">
+          <a href="/registro" className="text-sm text-accent hover:underline">
+            No tienes cuenta? Registrate
+          </a>
+        </div>
       </div>
     </div>
   );

@@ -59,7 +59,7 @@ export default function BudgetModal({ isOpen, onClose, category, month, existing
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm animate-slide-up"
+        className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl dark:shadow-gray-900/20 w-full sm:max-w-sm animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-primary text-white p-4 rounded-t-2xl flex items-center justify-between">
@@ -74,11 +74,11 @@ export default function BudgetModal({ isOpen, onClose, category, month, existing
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <p className="text-sm text-muted">
-            Presupuesto mensual para <span className="font-semibold text-primary">{category}</span>
+          <p className="text-sm text-muted dark:text-gray-400">
+            Presupuesto mensual para <span className="font-semibold text-primary dark:text-white">{category}</span>
           </p>
           <div>
-            <label className="block text-sm font-medium text-primary mb-1">Monto ($)</label>
+            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Monto ($)</label>
             <input
               type="number"
               step="0.01"
@@ -86,7 +86,7 @@ export default function BudgetModal({ isOpen, onClose, category, month, existing
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base"
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
               placeholder="0.00"
               autoFocus
               required
@@ -103,7 +103,7 @@ export default function BudgetModal({ isOpen, onClose, category, month, existing
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
+              className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-semibold py-3 rounded-xl transition-colors min-h-[48px] text-base"
             >
               Cancelar
             </button>

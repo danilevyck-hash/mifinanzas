@@ -36,9 +36,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  const logout = useCallback(() => {
+    setUser(null);
+    localStorage.removeItem("mifinanzas_user");
+    localStorage.removeItem("mifinanzas_token");
+  }, []);
+
   const authFetch = useCallback(async (url: string, options?: RequestInit): Promise<Response> => {
     const token = localStorage.getItem("mifinanzas_token");
-    return fetch(url, {
+    const res = await fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
@@ -46,7 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
-  }, []);
+    if (res.status === 401) {
+      logout();
+      window.location.href = "/login";
+      return res;
+    }
+    return res;
+  }, [logout]);
 
   const login = async (username: string, password: string): Promise<string | null> => {
     try {
@@ -65,12 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       return "Error de conexion";
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("mifinanzas_user");
-    localStorage.removeItem("mifinanzas_token");
   };
 
   return (

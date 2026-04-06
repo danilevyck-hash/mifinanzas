@@ -25,7 +25,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-muted text-sm">Cargando...</p>
+          <p className="text-muted dark:text-gray-400 text-sm">Cargando...</p>
         </div>
       </div>
     );

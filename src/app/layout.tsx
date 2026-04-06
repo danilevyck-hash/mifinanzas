@@ -4,11 +4,22 @@ import { AuthProvider } from "@/lib/auth";
 import AppShell from "@/components/AppShell";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { ToastProvider } from "@/components/Toast";
+import { ThemeProvider } from "@/lib/theme";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
-  title: "MiFinanzas",
-  description: "Control de gastos personales",
+  title: "MiFinanzas — Control de Gastos Personales",
+  description: "Registra tus gastos, configura presupuestos por categoria, y manten el control de tus finanzas personales.",
   manifest: "/manifest.json",
+  openGraph: {
+    title: "MiFinanzas — Control de Gastos Personales",
+    description: "Registra tus gastos, configura presupuestos por categoria, y manten el control de tus finanzas personales.",
+    type: "website",
+    locale: "es_LA",
+  },
+  twitter: {
+    card: "summary",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -40,13 +51,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="bg-surface min-h-screen">
-        <AuthProvider>
-          <ToastProvider>
-            <AppShell>{children}</AppShell>
-          </ToastProvider>
-        </AuthProvider>
+      <body className="bg-surface dark:bg-gray-950 min-h-screen">
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <AppShell>{children}</AppShell>
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
         <ServiceWorkerRegistrar />
+        <Analytics />
       </body>
     </html>
   );

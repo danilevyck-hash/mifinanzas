@@ -2,17 +2,19 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { PersonalExpense, Category, CategoryBudget } from "@/lib/supabase";
+import { PersonalExpense, Category, CategoryBudget, PAYMENT_METHODS } from "@/lib/supabase";
 import { formatCurrency, formatDate, MONTH_NAMES } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import ExpenseModal from "@/components/ExpenseModal";
 import ExportModal from "@/components/ExportModal";
 import BudgetModal from "@/components/BudgetModal";
+import ConfirmModal from "@/components/ConfirmModal";
+import { KPISkeleton, CategorySkeleton } from "@/components/SkeletonLoader";
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="text-center py-12 text-muted">Cargando...</div>}>
+    <Suspense fallback={<div className="text-center py-12 text-muted dark:text-gray-400">Cargando...</div>}>
       <HomeContent />
     </Suspense>
   );
@@ -43,6 +45,10 @@ function HomeContent() {
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
   const [budgetCategory, setBudgetCategory] = useState("");
   const [alertsShown, setAlertsShown] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterMethod, setFilterMethod] = useState("");
 
   const viewMonthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
   const dateFrom = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
@@ -57,8 +63,10 @@ function HomeContent() {
         const data = await res.json();
         if (Array.isArray(data)) setCategories(data);
       }
-    } catch { /* network error */ }
-  }, [user, authFetch]);
+    } catch {
+      toast("Error de conexion", "error");
+    }
+  }, [user, authFetch, toast]);
 
   const fetchBudgets = useCallback(async () => {
     if (!user) return;
@@ -68,8 +76,10 @@ function HomeContent() {
         const data = await res.json();
         if (Array.isArray(data)) setBudgets(data);
       }
-    } catch { /* network error */ }
-  }, [user, authFetch, viewMonthStr]);
+    } catch {
+      toast("Error de conexion", "error");
+    }
+  }, [user, authFetch, viewMonthStr, toast]);
 
   const fetchExpenses = useCallback(async () => {
     if (!user) return;
@@ -79,9 +89,11 @@ function HomeContent() {
         const data = await res.json();
         if (Array.isArray(data)) setExpenses(data);
       }
-    } catch { /* network error */ }
+    } catch {
+      toast("Error de conexion", "error");
+    }
     finally { setLoading(false); }
-  }, [dateFrom, dateTo, user, authFetch]);
+  }, [dateFrom, dateTo, user, authFetch, toast]);
 
   useEffect(() => { setLoading(true); fetchExpenses(); }, [fetchExpenses]);
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
@@ -95,8 +107,10 @@ function HomeContent() {
     try {
       const res = await authFetch(`/api/personal-expenses`);
       if (res.ok) { const data = await res.json(); if (Array.isArray(data)) setAllExpenses(data); }
-    } catch { /* network error */ }
-  }, [user, authFetch]);
+    } catch {
+      toast("Error de conexion", "error");
+    }
+  }, [user, authFetch, toast]);
   useEffect(() => { fetchAllExpenses(); }, [fetchAllExpenses]);
 
   const handleSave = async (expense: Partial<PersonalExpense>) => {
@@ -142,8 +156,10 @@ function HomeContent() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Eliminar este gasto?")) return;
+  const handleDeleteConfirm = async () => {
+    if (confirmDeleteId === null) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     setDeletingId(id);
     try {
       const res = await authFetch("/api/personal-expenses", { method: "DELETE", body: JSON.stringify({ id }) });
@@ -270,6 +286,24 @@ function HomeContent() {
       .sort((a, b) => b.total - a.total);
   }, [expenses, totalMonth]);
 
+  const filteredExpenses = useMemo(() => {
+    let result = expenses;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((e) =>
+        (e.notes && e.notes.toLowerCase().includes(q)) ||
+        e.category.toLowerCase().includes(q)
+      );
+    }
+    if (filterCategory) {
+      result = result.filter((e) => e.category === filterCategory);
+    }
+    if (filterMethod) {
+      result = result.filter((e) => e.payment_method === filterMethod);
+    }
+    return result;
+  }, [expenses, searchQuery, filterCategory, filterMethod]);
+
   const navigateMonth = (dir: -1 | 1) => {
     let m = viewMonth + dir;
     let y = viewYear;
@@ -286,15 +320,15 @@ function HomeContent() {
       <div className="flex items-center justify-center gap-2">
         <button
           onClick={() => navigateMonth(-1)}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white transition-colors"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white dark:hover:bg-gray-800 transition-colors"
           aria-label="Mes anterior"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div className="text-center min-w-[180px]">
-          <h1 className="text-xl font-semibold text-primary">
+          <h1 className="text-xl font-semibold text-primary dark:text-white">
             {MONTH_NAMES[viewMonth]} {viewYear}
           </h1>
           {!isCurrentMonth && (
@@ -305,39 +339,41 @@ function HomeContent() {
         </div>
         <button
           onClick={() => navigateMonth(1)}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white transition-colors"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white dark:hover:bg-gray-800 transition-colors"
           aria-label="Mes siguiente"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>
 
       {/* Budget KPIs — Pulso del mes */}
-      {hasBudgets ? (
+      {loading ? (
+        <KPISkeleton />
+      ) : hasBudgets ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Gastado</p>
-            <p className="text-2xl font-semibold text-primary mt-1">{formatCurrency(totalMonth)}</p>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gastado</p>
+            <p className="text-2xl font-semibold text-primary dark:text-white mt-1">{formatCurrency(totalMonth)}</p>
             <p className={`text-xs mt-1 ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-[#1e3a5f]"}`}>
               {Math.round(spentPct)}% del presupuesto · {expenses.length} gasto{expenses.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Disponible</p>
-            <p className={`text-2xl font-semibold mt-1 ${available < 0 ? "text-red-500" : "text-primary"}`}>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Disponible</p>
+            <p className={`text-2xl font-semibold mt-1 ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
               {available < 0 ? `-${formatCurrency(Math.abs(available))} por encima` : formatCurrency(available)}
             </p>
             {isCurrentMonth && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {daysRemaining === 0 ? "ultimo dia del mes" : `quedan ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}`}
               </p>
             )}
           </div>
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Promedio diario</p>
-            <p className="text-2xl font-semibold text-primary mt-1">{formatCurrency(avgDaily)}</p>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Promedio diario</p>
+            <p className="text-2xl font-semibold text-primary dark:text-white mt-1">{formatCurrency(avgDaily)}</p>
             {isCurrentMonth && daysRemaining > 0 && (
               <p className={`text-xs mt-1 ${avgDaily > targetDaily ? "text-amber-500" : "text-green-500"}`}>
                 target: {formatCurrency(targetDaily)}/dia
@@ -346,10 +382,10 @@ function HomeContent() {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm p-5 border-l-4 border-accent text-center">
-          <p className="text-xs text-muted uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
-          <p className="text-3xl font-bold text-primary mt-1">{formatCurrency(totalMonth)}</p>
-          <p className="text-sm text-muted mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5 border-l-4 border-accent text-center">
+          <p className="text-xs text-muted dark:text-gray-400 uppercase tracking-wider">Total {MONTH_NAMES[viewMonth]}</p>
+          <p className="text-3xl font-bold text-primary dark:text-white mt-1">{formatCurrency(totalMonth)}</p>
+          <p className="text-sm text-muted dark:text-gray-400 mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
           {expenses.length > 0 && categoryData.length > 0 && (
             <button
               onClick={() => { setBudgetCategory(categoryData[0].name); setBudgetModalOpen(true); }}
@@ -362,9 +398,11 @@ function HomeContent() {
       )}
 
       {/* Category breakdown — Apple Storage style */}
-      {categoryData.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <h2 className="text-base font-semibold text-primary mb-3">Por Categoria</h2>
+      {loading ? (
+        <CategorySkeleton />
+      ) : categoryData.length > 0 ? (
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
+          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Por Categoria</h2>
           <div className="space-y-4">
             {sortedCategoryData.map((cat) => {
               const budget = budgetMap[cat.name];
@@ -378,10 +416,10 @@ function HomeContent() {
                   <div className="flex items-center justify-between text-sm mb-1 gap-2">
                     <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                      <span className="font-medium text-primary">{cat.name}</span>
+                      <span className="font-medium text-primary dark:text-white">{cat.name}</span>
                       <button
                         onClick={() => { setBudgetCategory(cat.name); setBudgetModalOpen(true); }}
-                        className="text-muted hover:text-accent transition-colors"
+                        className="text-muted dark:text-gray-400 hover:text-accent transition-colors"
                         title="Configurar presupuesto"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -390,20 +428,20 @@ function HomeContent() {
                         </svg>
                       </button>
                     </div>
-                    <span className="text-muted text-xs truncate ml-2">
+                    <span className="text-muted dark:text-gray-400 text-xs truncate ml-2">
                       {hasBudget ? `${formatCurrency(cat.total)} / ${formatCurrency(budget)}` : formatCurrency(cat.total)}
                     </span>
                   </div>
                   {hasBudget ? (
                     <>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }}
                         />
                       </div>
                       <p className={`text-xs mt-1 ${
-                        budgetPct >= 100 ? "text-red-500" : budgetPct >= 80 ? "text-amber-500" : "text-gray-500"
+                        budgetPct >= 100 ? "text-red-500" : budgetPct >= 80 ? "text-amber-500" : "text-gray-500 dark:text-gray-400"
                       }`}>
                         {budgetPct >= 100
                           ? `${formatCurrency(Math.abs(remaining))} por encima del presupuesto`
@@ -413,7 +451,7 @@ function HomeContent() {
                       </p>
                     </>
                   ) : (
-                    <p className="text-xs text-gray-400 mt-1">Sin presupuesto configurado</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Sin presupuesto configurado</p>
                   )}
                 </div>
               );
@@ -430,23 +468,23 @@ function HomeContent() {
             {categoryData.map((cat) => (
               <div key={cat.name} className="flex items-center gap-1.5 text-xs">
                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                <span className="text-muted">{cat.name}</span>
+                <span className="text-muted dark:text-gray-400">{cat.name}</span>
               </div>
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Payment method breakdown */}
       {methodData.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <h2 className="text-base font-semibold text-primary mb-3">Por Metodo de Pago</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
+          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Por Metodo de Pago</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {methodData.map((m) => (
-              <div key={m.name} className="bg-surface rounded-xl p-3 text-center">
-                <p className="text-xs text-muted uppercase">{m.name}</p>
-                <p className="text-lg font-bold text-primary">{formatCurrency(m.total)}</p>
-                <p className="text-xs text-muted">{m.pct.toFixed(0)}%</p>
+              <div key={m.name} className="bg-surface dark:bg-gray-800 rounded-xl p-3 text-center">
+                <p className="text-xs text-muted dark:text-gray-400 uppercase">{m.name}</p>
+                <p className="text-lg font-bold text-primary dark:text-white">{formatCurrency(m.total)}</p>
+                <p className="text-xs text-muted dark:text-gray-400">{m.pct.toFixed(0)}%</p>
               </div>
             ))}
           </div>
@@ -456,12 +494,12 @@ function HomeContent() {
       {/* Trend KPIs */}
       {hasTrendData && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wider">vs. mes anterior</p>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">vs. mes anterior</p>
             {!prevMonthData.hasData ? (
-              <p className="text-sm text-gray-400 mt-2">Sin datos previos</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Sin datos previos</p>
             ) : prevMonthData.total < 50 ? (
-              <p className="text-sm text-gray-400 mt-2">Mes anterior: {formatCurrency(prevMonthData.total)} (datos insuficientes)</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Mes anterior: {formatCurrency(prevMonthData.total)} (datos insuficientes)</p>
             ) : (() => {
               const diff = totalMonth - prevMonthData.total;
               const changePct = (diff / prevMonthData.total) * 100;
@@ -479,13 +517,13 @@ function HomeContent() {
             })()}
           </div>
           {dominantCategory && expenses.length > 0 && (
-            <div className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Categoria dominante</p>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoria dominante</p>
               <div className="flex items-center gap-2 mt-1">
                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: dominantCategory.color }} />
-                <p className="text-2xl font-semibold text-primary">{dominantCategory.name}</p>
+                <p className="text-2xl font-semibold text-primary dark:text-white">{dominantCategory.name}</p>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {dominantCategory.streak <= 1 ? "este mes" : `${dominantCategory.streak} meses seguidos`}
               </p>
             </div>
@@ -496,14 +534,14 @@ function HomeContent() {
       {/* Action buttons */}
       <div className="flex flex-wrap justify-end gap-3">
         <button onClick={() => setExportOpen(true)}
-          className="bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold px-5 py-3 rounded-xl shadow-sm transition-colors flex items-center gap-2 min-h-[48px]">
+          className="bg-white dark:bg-gray-900 border-2 border-primary text-primary dark:text-white hover:bg-primary hover:text-white font-semibold px-5 py-3 rounded-xl shadow-sm dark:shadow-gray-900/20 transition-colors flex items-center gap-2 min-h-[48px]">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
           Exportar
         </button>
         <button onClick={() => { setEditing(null); setModalOpen(true); }}
-          className="bg-accent hover:bg-accent-light text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition-colors flex items-center gap-2 min-h-[48px]">
+          className="bg-accent hover:bg-accent-light text-white font-semibold px-6 py-3 rounded-xl shadow-sm dark:shadow-gray-900/20 transition-colors flex items-center gap-2 min-h-[48px]">
           <span className="text-xl leading-none">+</span> Nuevo Gasto
         </button>
       </div>
@@ -511,13 +549,28 @@ function HomeContent() {
       {/* Expense list */}
       <div className="space-y-3">
         {loading ? (
-          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-8 text-center">
             <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-            <p className="text-muted text-sm">Cargando gastos...</p>
+            <p className="text-muted dark:text-gray-400 text-sm">Cargando gastos...</p>
+          </div>
+        ) : expenses.length === 0 && categories.length === 0 ? (
+          /* Onboarding banner for first-time users */
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-6 text-center">
+            <h2 className="text-xl font-semibold text-primary dark:text-white">Bienvenido a MiFinanzas</h2>
+            <p className="text-muted dark:text-gray-400 mt-1">Empieza registrando tu primer gasto</p>
+            <button
+              onClick={() => { setEditing(null); setModalOpen(true); }}
+              className="bg-accent hover:bg-accent-light text-white font-semibold px-6 py-3 rounded-xl shadow-sm dark:shadow-gray-900/20 transition-colors mt-4 min-h-[48px]"
+            >
+              Agregar primer gasto
+            </button>
+            <p className="text-sm text-muted dark:text-gray-400 mt-4">
+              1. Crea una categoria &rarr; 2. Registra un gasto &rarr; 3. Configura tu presupuesto
+            </p>
           </div>
         ) : expenses.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-            <p className="text-muted">Sin gastos este mes</p>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-8 text-center">
+            <p className="text-muted dark:text-gray-400">Sin gastos este mes</p>
             <button
               onClick={() => { setEditing(null); setModalOpen(true); }}
               className="text-accent hover:text-accent-light text-sm font-medium mt-2 transition-colors"
@@ -527,10 +580,49 @@ function HomeContent() {
           </div>
         ) : (
           <>
+            {/* Search and filter bar */}
+            {expenses.length >= 2 && (
+              <div className="flex flex-wrap gap-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar por notas o categoria..."
+                  className="flex-1 min-w-[180px] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-sm"
+                />
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-900 transition-shadow text-sm"
+                >
+                  <option value="">Todas</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={filterMethod}
+                  onChange={(e) => setFilterMethod(e.target.value)}
+                  className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-900 transition-shadow text-sm"
+                >
+                  <option value="">Todos</option>
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {filteredExpenses.length === 0 ? (
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-8 text-center">
+                <p className="text-muted dark:text-gray-400">Sin resultados para este filtro</p>
+              </div>
+            ) : (
+            <>
             {/* Mobile cards */}
             <div className="sm:hidden space-y-2">
-              {expenses.map((e) => (
-                <div key={e.id} className={`bg-white rounded-xl shadow-sm p-4 ${deletingId === e.id ? "opacity-50" : ""}`}>
+              {filteredExpenses.map((e) => (
+                <div key={e.id} className={`bg-white dark:bg-gray-900 rounded-xl shadow-sm dark:shadow-gray-900/20 p-4 ${deletingId === e.id ? "opacity-50" : ""}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -540,16 +632,16 @@ function HomeContent() {
                         >
                           {e.category}
                         </span>
-                        <span className="text-xs text-muted">{formatDate(e.date)}</span>
+                        <span className="text-xs text-muted dark:text-gray-400">{formatDate(e.date)}</span>
                       </div>
-                      <p className="text-lg font-bold text-primary">{formatCurrency(e.amount)}</p>
-                      {e.notes && <p className="text-sm text-muted truncate mt-0.5">{e.notes}</p>}
-                      <p className="text-xs text-muted mt-1">{e.payment_method}</p>
+                      <p className="text-lg font-bold text-primary dark:text-white">{formatCurrency(e.amount)}</p>
+                      {e.notes && <p className="text-sm text-muted dark:text-gray-400 truncate mt-0.5">{e.notes}</p>}
+                      <p className="text-xs text-muted dark:text-gray-400 mt-1">{e.payment_method}</p>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
                       <button
                         onClick={() => { setEditing(e); setModalOpen(true); }}
-                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-primary hover:bg-surface transition-colors"
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-primary dark:text-white hover:bg-surface dark:hover:bg-gray-800 transition-colors"
                         title="Editar"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -557,7 +649,7 @@ function HomeContent() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleDelete(e.id)}
+                        onClick={() => setConfirmDeleteId(e.id)}
                         disabled={deletingId === e.id}
                         className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 transition-colors disabled:opacity-50"
                         title="Eliminar"
@@ -573,7 +665,7 @@ function HomeContent() {
             </div>
 
             {/* Desktop table */}
-            <div className="hidden sm:block bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="hidden sm:block bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -588,9 +680,9 @@ function HomeContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {expenses.map((e, i) => (
-                      <tr key={e.id} className={`border-b border-gray-50 ${i % 2 === 0 ? "bg-white" : "bg-surface"} ${deletingId === e.id ? "opacity-50" : ""}`}>
-                        <td className="px-3 py-3 font-medium text-muted">{expenses.length - i}</td>
+                    {filteredExpenses.map((e, i) => (
+                      <tr key={e.id} className={`border-b border-gray-50 dark:border-gray-800 ${i % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-surface dark:bg-gray-800"} ${deletingId === e.id ? "opacity-50" : ""}`}>
+                        <td className="px-3 py-3 font-medium text-muted dark:text-gray-400">{filteredExpenses.length - i}</td>
                         <td className="px-3 py-3">{formatDate(e.date)}</td>
                         <td className="px-3 py-3 text-right font-semibold">{formatCurrency(e.amount)}</td>
                         <td className="px-3 py-3">
@@ -602,14 +694,14 @@ function HomeContent() {
                         <td className="px-3 py-3">
                           {e.notes ? (
                             <span className="block truncate max-w-[180px]" title={e.notes}>{e.notes}</span>
-                          ) : <span className="text-gray-300">-</span>}
+                          ) : <span className="text-gray-300 dark:text-gray-600">-</span>}
                         </td>
-                        <td className="px-3 py-3 text-xs text-muted">{e.payment_method}</td>
+                        <td className="px-3 py-3 text-xs text-muted dark:text-gray-400">{e.payment_method}</td>
                         <td className="px-3 py-3 text-center">
                           <div className="flex justify-center gap-1">
                             <button
                               onClick={() => { setEditing(e); setModalOpen(true); }}
-                              className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-primary hover:bg-surface transition-colors"
+                              className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-primary dark:text-white hover:bg-surface dark:hover:bg-gray-800 transition-colors"
                               title="Editar"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -617,7 +709,7 @@ function HomeContent() {
                               </svg>
                             </button>
                             <button
-                              onClick={() => handleDelete(e.id)}
+                              onClick={() => setConfirmDeleteId(e.id)}
                               disabled={deletingId === e.id}
                               className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 transition-colors disabled:opacity-50"
                               title="Eliminar"
@@ -635,9 +727,18 @@ function HomeContent() {
               </div>
             </div>
           </>
+            )}
+          </>
         )}
       </div>
 
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar gasto"
+        message="Este gasto se eliminara permanentemente. Esta accion no se puede deshacer."
+      />
       <ExpenseModal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(null); }}

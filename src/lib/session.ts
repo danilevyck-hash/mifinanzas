@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { NextRequest } from "next/server";
 
-const SECRET = process.env.AUTH_SECRET || "mifinanzas-change-this-secret";
+const SECRET = process.env.AUTH_SECRET!;
 
 export function createToken(userId: number): string {
   const payload = JSON.stringify({
