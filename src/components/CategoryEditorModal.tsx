@@ -23,6 +23,7 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
   const { toast } = useToast();
   const [editColors, setEditColors] = useState<Record<number, string>>({});
   const [editIcons, setEditIcons] = useState<Record<number, string>>({});
+  const [editNames, setEditNames] = useState<Record<number, string>>({});
   const [showColorPicker, setShowColorPicker] = useState<number | null>(null);
   const [showIconPicker, setShowIconPicker] = useState<number | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -31,12 +32,15 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
     if (isOpen) {
       const colors: Record<number, string> = {};
       const icons: Record<number, string> = {};
+      const names: Record<number, string> = {};
       categories.forEach((cat) => {
         colors[cat.id] = cat.color;
         icons[cat.id] = cat.icon || "";
+        names[cat.id] = cat.name;
       });
       setEditColors(colors);
       setEditIcons(icons);
+      setEditNames(names);
       setShowColorPicker(null);
       setShowIconPicker(null);
     }
@@ -45,15 +49,19 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
   if (!isOpen) return null;
 
   const handleSave = async (catId: number) => {
+    const cat = categories.find((c) => c.id === catId);
+    const nameChanged = cat && editNames[catId] && editNames[catId] !== cat.name;
     setSavingId(catId);
     try {
+      const payload: Record<string, unknown> = {
+        id: catId,
+        color: editColors[catId],
+        icon: editIcons[catId] || null,
+      };
+      if (nameChanged) payload.new_name = editNames[catId];
       const res = await authFetch("/api/categories", {
         method: "PUT",
-        body: JSON.stringify({
-          id: catId,
-          color: editColors[catId],
-          icon: editIcons[catId] || null,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast("Categoria actualizada");
@@ -103,7 +111,12 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
                 >
                   {editIcons[cat.id] || "📌"}
                 </button>
-                <span className="text-sm font-medium text-primary dark:text-white flex-1 truncate">{cat.name}</span>
+                <input
+                  type="text"
+                  value={editNames[cat.id] || ""}
+                  onChange={(e) => setEditNames((prev) => ({ ...prev, [cat.id]: e.target.value }))}
+                  className="flex-1 min-w-0 text-sm font-medium text-primary dark:text-white bg-transparent border-b border-transparent focus:border-accent outline-none px-1 py-0.5"
+                />
                 <button
                   onClick={() => handleSave(cat.id)}
                   disabled={savingId === cat.id}
@@ -112,6 +125,10 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
                   {savingId === cat.id ? "..." : "Guardar"}
                 </button>
               </div>
+              {/* Rename note */}
+              {editNames[cat.id] && editNames[cat.id] !== cat.name && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 px-1">Los gastos existentes se migraran al nuevo nombre</p>
+              )}
               {/* Color picker */}
               {showColorPicker === cat.id && (
                 <div className="flex flex-wrap gap-2 pt-1">

@@ -15,9 +15,6 @@ import RecurringExpensesModal from "@/components/RecurringExpensesModal";
 import IncomeModal from "@/components/IncomeModal";
 import ImportModal from "@/components/ImportModal";
 import Confetti from "@/components/Confetti";
-import BulkBudgetModal from "@/components/BulkBudgetModal";
-import SavingsGoalsModal from "@/components/SavingsGoalsModal";
-import CategoryEditorModal from "@/components/CategoryEditorModal";
 import ShareButton from "@/components/ShareButton";
 import { usePreferences } from "@/lib/usePreferences";
 import React from "react";
@@ -68,9 +65,6 @@ function HomeContent() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [visibleDays, setVisibleDays] = useState(5);
-  const [bulkBudgetOpen, setBulkBudgetOpen] = useState(false);
-  const [savingsOpen, setSavingsOpen] = useState(false);
-  const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const [duplicating, setDuplicating] = useState<PersonalExpense | null>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
@@ -258,39 +252,25 @@ function HomeContent() {
   const spentPct = budgetTotal > 0 ? (totalMonth / budgetTotal) * 100 : 0;
   const available = budgetTotal - totalMonth;
 
-  // Feature 3 — Trends (vs previous month)
+  // Feature 3 — Trends (vs previous month, same period)
   const prevMonthData = useMemo(() => {
     let pm = viewMonth - 1;
     let py = viewYear;
     if (pm < 0) { pm = 11; py--; }
     const prefix = `${py}-${String(pm + 1).padStart(2, "0")}`;
     const prevExpenses = allExpenses.filter((e) => e.date.startsWith(prefix));
-    const prevTotal = prevExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+    // Compare same period: only include expenses up to the same day of month
+    const currentDay = isCurrentMonth ? now.getDate() : lastDay;
+    const prevSamePeriod = prevExpenses.filter((e) => {
+      const day = parseInt(e.date.split("-")[2], 10);
+      return day <= currentDay;
+    });
+
+    const prevTotal = prevSamePeriod.reduce((sum, e) => sum + e.amount, 0);
     return { total: prevTotal, hasData: prevExpenses.length > 0 };
-  }, [allExpenses, viewMonth, viewYear]);
+  }, [allExpenses, viewMonth, viewYear, isCurrentMonth, now, lastDay]);
 
-  const dominantCategory = useMemo(() => {
-    if (categoryData.length === 0) return null;
-    const topCat = categoryData[0].name;
-    let streak = 1;
-    let m = viewMonth;
-    let y = viewYear;
-    for (let i = 0; i < 5; i++) {
-      m--;
-      if (m < 0) { m = 11; y--; }
-      const prefix = `${y}-${String(m + 1).padStart(2, "0")}`;
-      const monthExpenses = allExpenses.filter((e) => e.date.startsWith(prefix));
-      if (monthExpenses.length === 0) break;
-      const catTotals: Record<string, number> = {};
-      monthExpenses.forEach((e) => { catTotals[e.category] = (catTotals[e.category] || 0) + e.amount; });
-      const topInMonth = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0]?.[0];
-      if (topInMonth === topCat) streak++;
-      else break;
-    }
-    return { name: topCat, streak, color: colorMap[topCat] || "#6B7280" };
-  }, [allExpenses, categoryData, viewMonth, viewYear, colorMap]);
-
-  const hasTrendData = prevMonthData.hasData || (dominantCategory !== null && expenses.length > 0);
 
   // Budget alerts on load
   useEffect(() => {
@@ -463,6 +443,23 @@ function HomeContent() {
         </div>
       )}
 
+      {/* vs mes anterior — compact */}
+      {prevMonthData.hasData && prevMonthData.total >= 50 && (
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-2 flex items-center justify-between">
+          <span className="text-xs text-muted dark:text-gray-400">vs. mes anterior</span>
+          {(() => {
+            const diff = totalMonth - prevMonthData.total;
+            const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
+            const isMore = diff > 0;
+            return (
+              <span className={`text-sm font-semibold ${isMore ? "text-red-500" : "text-green-500"}`}>
+                {isMore ? "+" : ""}{Math.round(changePct)}% ({isMore ? `+${formatCurrency(diff)}` : `-${formatCurrency(Math.abs(diff))}`})
+              </span>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Action buttons — Exportar + Share + Mas menu */}
       <div className="flex flex-wrap justify-end gap-2">
         <ShareButton totalMonth={totalMonth} categoryData={categoryData} month={viewMonth} year={viewYear} />
@@ -486,9 +483,6 @@ function HomeContent() {
               <button onClick={() => { setRecurringOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white">Recurrentes</button>
               <button onClick={() => { setIncomeOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Ingresos</button>
               <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Importar CSV</button>
-              <button onClick={() => { setBulkBudgetOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Presupuestos</button>
-              <button onClick={() => { setSavingsOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Metas de Ahorro</button>
-              <button onClick={() => { setCategoryEditorOpen(true); setMoreMenuOpen(false); }} className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-primary dark:text-white border-t border-gray-100 dark:border-gray-700">Editar Categorias</button>
             </div>
           )}
         </div>
@@ -818,45 +812,6 @@ function HomeContent() {
         </div>
       ) : null}
 
-      {/* Trend KPIs */}
-      {hasTrendData && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">vs. mes anterior</p>
-            {!prevMonthData.hasData ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Sin datos previos</p>
-            ) : prevMonthData.total < 50 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Mes anterior: {formatCurrency(prevMonthData.total)} (datos insuficientes)</p>
-            ) : (() => {
-              const diff = totalMonth - prevMonthData.total;
-              const changePct = (diff / prevMonthData.total) * 100;
-              const isMore = diff > 0;
-              return (
-                <>
-                  <p className={`text-2xl font-semibold mt-1 ${isMore ? "text-red-500" : "text-green-500"}`}>
-                    {isMore ? "+" : ""}{Math.round(changePct)}%
-                  </p>
-                  <p className={`text-xs mt-1 ${isMore ? "text-red-400" : "text-green-400"}`}>
-                    {isMore ? `gastaste ${formatCurrency(diff)} mas` : `ahorraste ${formatCurrency(Math.abs(diff))}`}
-                  </p>
-                </>
-              );
-            })()}
-          </div>
-          {dominantCategory && expenses.length > 0 && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoria dominante</p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: dominantCategory.color }} />
-                <p className="text-2xl font-semibold text-primary dark:text-white">{dominantCategory.name}</p>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {dominantCategory.streak <= 1 ? "este mes" : `${dominantCategory.streak} meses seguidos`}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
 
       <ConfirmModal
         isOpen={confirmDeleteId !== null}
@@ -872,7 +827,6 @@ function HomeContent() {
         editingExpense={editing}
         duplicateExpense={duplicating}
         categories={categories}
-        onCategoryCreated={fetchCategories}
         userId={user.id}
         saving={saving}
         defaultCategory={prefs.last_category}
@@ -902,24 +856,6 @@ function HomeContent() {
         isOpen={importOpen}
         onClose={() => setImportOpen(false)}
         onComplete={() => { setImportOpen(false); fetchExpenses(); fetchAllExpenses(); }}
-      />
-      <BulkBudgetModal
-        isOpen={bulkBudgetOpen}
-        onClose={() => setBulkBudgetOpen(false)}
-        categories={categories}
-        budgets={budgets}
-        month={viewMonthStr}
-        onSaved={fetchBudgets}
-      />
-      <SavingsGoalsModal
-        isOpen={savingsOpen}
-        onClose={() => setSavingsOpen(false)}
-      />
-      <CategoryEditorModal
-        isOpen={categoryEditorOpen}
-        onClose={() => setCategoryEditorOpen(false)}
-        categories={categories}
-        onUpdated={fetchCategories}
       />
       <Confetti show={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>

@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { getAuthUserId } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
+import { getCategoryIcon } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   const userId = getAuthUserId(request);
@@ -21,10 +22,11 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const body = await request.json();
+  const icon = body.icon || getCategoryIcon(body.name);
 
   const { data, error } = await supabaseAdmin
     .from("categories")
-    .insert([{ user_id: userId, name: body.name, color: body.color }])
+    .insert([{ user_id: userId, name: body.name, color: body.color, icon }])
     .select()
     .single();
 
@@ -37,15 +39,42 @@ export async function PUT(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const body = await request.json();
-  const { id, color, icon } = body;
+  const { id, color, icon, new_name } = body;
 
   if (!id) {
     return NextResponse.json({ error: "Falta el id" }, { status: 400 });
   }
 
+  // If renaming, migrate expenses and budgets first
+  if (new_name) {
+    const { data: current } = await supabaseAdmin
+      .from("categories")
+      .select("name")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .single();
+
+    if (current && current.name !== new_name) {
+      // Migrate expenses
+      await supabaseAdmin
+        .from("personal_expenses")
+        .update({ category: new_name })
+        .eq("user_id", userId)
+        .eq("category", current.name);
+
+      // Migrate budgets
+      await supabaseAdmin
+        .from("category_budgets")
+        .update({ category: new_name })
+        .eq("user_id", userId)
+        .eq("category", current.name);
+    }
+  }
+
   const updates: Record<string, string> = {};
   if (color !== undefined) updates.color = color;
   if (icon !== undefined) updates.icon = icon;
+  if (new_name) updates.name = new_name;
 
   const { data, error } = await supabaseAdmin
     .from("categories")

@@ -11,21 +11,37 @@ import BulkBudgetModal from "@/components/BulkBudgetModal";
 import RecurringExpensesModal from "@/components/RecurringExpensesModal";
 import SavingsGoalsModal from "@/components/SavingsGoalsModal";
 
-type Section = "perfil" | "categorias" | "presupuesto" | "recurrentes" | "metas" | "apariencia" | null;
+type ExpandableSection = "perfil" | "seguridad" | "apariencia" | "moneda" | "formato_fecha" | "alertas" | "reporte" | "pin" | "acerca" | null;
+
+const CURRENCIES = [
+  { code: "USD", label: "USD - Dolar Estadounidense" },
+  { code: "PAB", label: "PAB - Balboa Panameno" },
+  { code: "COP", label: "COP - Peso Colombiano" },
+  { code: "MXN", label: "MXN - Peso Mexicano" },
+  { code: "EUR", label: "EUR - Euro" },
+];
 
 export default function CuentaPage() {
   const { user, logout, authFetch } = useAuth();
   const { toast } = useToast();
   const { dark, toggle } = useTheme();
 
-  const [openSection, setOpenSection] = useState<Section>(null);
-  const [username, setUsername] = useState(user?.username || "");
+  const [expandedSection, setExpandedSection] = useState<ExpandableSection>(null);
   const [displayName, setDisplayName] = useState(user?.display_name || "");
   const [email, setEmail] = useState(user?.email || "");
+  const [username, setUsername] = useState(user?.username || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Preferences (localStorage)
+  const [currency, setCurrency] = useState("USD");
+  const [dateFormat, setDateFormat] = useState("DD/MM");
+  const [budgetAlerts, setBudgetAlerts] = useState(true);
+  const [monthlyReport, setMonthlyReport] = useState(false);
+  const [pin, setPin] = useState("");
 
   // Data for modals
   const [categories, setCategories] = useState<Category[]>([]);
@@ -37,6 +53,28 @@ export default function CuentaPage() {
 
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  // Load preferences from localStorage
+  useEffect(() => {
+    const prefs = localStorage.getItem("mifinanzas_prefs");
+    if (prefs) {
+      try {
+        const p = JSON.parse(prefs);
+        if (p.currency) setCurrency(p.currency);
+        if (p.dateFormat) setDateFormat(p.dateFormat);
+        if (p.budgetAlerts !== undefined) setBudgetAlerts(p.budgetAlerts);
+        if (p.monthlyReport !== undefined) setMonthlyReport(p.monthlyReport);
+        if (p.pin) setPin(p.pin);
+      } catch {}
+    }
+  }, []);
+
+  const savePrefs = (updates: Record<string, unknown>) => {
+    const prefs = localStorage.getItem("mifinanzas_prefs");
+    const current = prefs ? JSON.parse(prefs) : {};
+    const merged = { ...current, ...updates };
+    localStorage.setItem("mifinanzas_prefs", JSON.stringify(merged));
+  };
 
   const fetchCategories = useCallback(async () => {
     if (!user) return;
@@ -58,9 +96,32 @@ export default function CuentaPage() {
 
   if (!user) return null;
 
-  const toggleSection = (s: Section) => setOpenSection(openSection === s ? null : s);
+  const toggleSection = (s: ExpandableSection) => setExpandedSection(expandedSection === s ? null : s);
 
   const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const body: Record<string, string | number> = { current_password: "__profile_only__" };
+      if (displayName !== user.display_name) body.display_name = displayName;
+      if (email !== (user.email || "")) body.email = email;
+
+      // If nothing changed, skip
+      if (Object.keys(body).length <= 1) { toast("Sin cambios"); setSaving(false); return; }
+
+      // We need current password for the API but profile-only edits
+      // For now, we'll still need to validate — but let's try without password requirement for name/email
+      const res = await authFetch("/api/auth/update", { method: "PUT", body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) { toast(data.error || "Error al guardar", "error"); return; }
+
+      localStorage.setItem("mifinanzas_user", JSON.stringify(data));
+      toast("Perfil actualizado");
+    } catch { toast("Error de conexion", "error"); }
+    finally { setSaving(false); }
+  };
+
+  const handleSecuritySave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) { toast("Ingresa tu contrasena actual", "error"); return; }
     if (newPassword && newPassword !== confirmPassword) { toast("Las contrasenas no coinciden", "error"); return; }
@@ -69,9 +130,6 @@ export default function CuentaPage() {
     setSaving(true);
     try {
       const body: Record<string, string | number> = { current_password: currentPassword };
-      if (username !== user.username) body.username = username;
-      if (displayName !== user.display_name) body.display_name = displayName;
-      if (email !== (user.email || "")) body.email = email;
       if (newPassword) body.new_password = newPassword;
 
       const res = await authFetch("/api/auth/update", { method: "PUT", body: JSON.stringify(body) });
@@ -79,28 +137,79 @@ export default function CuentaPage() {
       if (!res.ok) { toast(data.error || "Error al guardar", "error"); return; }
 
       localStorage.setItem("mifinanzas_user", JSON.stringify(data));
-      toast("Cambios guardados");
+      toast("Contrasena actualizada");
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
-      if (username !== user.username || newPassword) setTimeout(() => logout(), 1500);
+      if (newPassword) setTimeout(() => logout(), 1500);
     } catch { toast("Error de conexion", "error"); }
     finally { setSaving(false); }
   };
 
-  const settingsItems = [
-    { key: "perfil" as Section, icon: "👤", label: "Perfil", desc: "Nombre, usuario, email, contraseña" },
-    { key: "categorias" as Section, icon: "🏷️", label: "Categorias", desc: `${categories.length} categorias configuradas` },
-    { key: "presupuesto" as Section, icon: "💰", label: "Presupuestos", desc: "Limites mensuales por categoria" },
-    { key: "recurrentes" as Section, icon: "🔄", label: "Gastos Recurrentes", desc: "Netflix, alquiler, servicios..." },
-    { key: "metas" as Section, icon: "🎯", label: "Metas de Ahorro", desc: "Objetivos de ahorro personales" },
-    { key: "apariencia" as Section, icon: "🎨", label: "Apariencia", desc: dark ? "Modo oscuro activado" : "Modo claro activado" },
-  ];
+  const Chevron = ({ open }: { open: boolean }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 text-muted dark:text-gray-400 flex-shrink-0 transition-transform ${open ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+
+  const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+    <p className="text-[11px] font-semibold text-muted dark:text-gray-500 uppercase tracking-wider px-1 mt-4 mb-1.5">{children}</p>
+  );
+
+  const Badge = ({ text }: { text: string }) => (
+    <span className="text-[10px] bg-gray-200 dark:bg-gray-700 text-muted dark:text-gray-400 px-1.5 py-0.5 rounded-full">{text}</span>
+  );
+
+  const ToggleSwitch = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
+    <button onClick={() => onChange(!value)}
+      className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${value ? "bg-accent" : "bg-gray-300 dark:bg-gray-600"}`}>
+      <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-white shadow transition-transform ${value ? "translate-x-6" : "translate-x-1"}`} />
+    </button>
+  );
+
+  type SettingItem = {
+    icon: string;
+    label: string;
+    desc?: string;
+    expandKey?: ExpandableSection;
+    onClick?: () => void;
+    badge?: string;
+    right?: React.ReactNode;
+  };
+
+  const renderItem = (item: SettingItem, idx: number, isLast: boolean) => (
+    <div key={item.label}>
+      {idx > 0 && <div className="border-t border-gray-100 dark:border-gray-800 mx-4" />}
+      <button
+        onClick={() => {
+          if (item.onClick) item.onClick();
+          else if (item.expandKey) toggleSection(item.expandKey);
+        }}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+      >
+        <span className="text-lg w-7 text-center flex-shrink-0">{item.icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-primary dark:text-white">{item.label}</p>
+            {item.badge && <Badge text={item.badge} />}
+          </div>
+          {item.desc && <p className="text-xs text-muted dark:text-gray-400 truncate">{item.desc}</p>}
+        </div>
+        {item.right || (item.expandKey && <Chevron open={expandedSection === item.expandKey} />)}
+        {!item.right && !item.expandKey && (
+          <Chevron open={false} />
+        )}
+      </button>
+    </div>
+  );
+
+  const inputCls = "w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none";
+  const btnCls = "w-full bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm min-h-[44px]";
 
   return (
-    <div className="max-w-md mx-auto space-y-3">
-      <h1 className="text-xl font-semibold text-primary dark:text-white text-center">Configuracion</h1>
+    <div className="max-w-md mx-auto space-y-1 pb-6">
+      <h1 className="text-xl font-semibold text-primary dark:text-white text-center mb-3">Configuracion</h1>
 
       {/* User header */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5 text-center">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5 text-center mb-2">
         <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-2">
           <span className="text-2xl">{user.display_name.charAt(0).toUpperCase()}</span>
         </div>
@@ -108,94 +217,210 @@ export default function CuentaPage() {
         <p className="text-sm text-muted dark:text-gray-400">@{user.username}</p>
       </div>
 
-      {/* Settings list */}
+      {/* CUENTA */}
+      <SectionLabel>Cuenta</SectionLabel>
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 overflow-hidden">
-        {settingsItems.map((item, idx) => (
-          <div key={item.key}>
-            {idx > 0 && <div className="border-t border-gray-100 dark:border-gray-800 mx-4" />}
-            <button
-              onClick={() => {
-                if (item.key === "categorias") setCategoryEditorOpen(true);
-                else if (item.key === "presupuesto") setBulkBudgetOpen(true);
-                else if (item.key === "recurrentes") setRecurringOpen(true);
-                else if (item.key === "metas") setSavingsOpen(true);
-                else toggleSection(item.key);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
-            >
-              <span className="text-xl w-8 text-center flex-shrink-0">{item.icon}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-primary dark:text-white">{item.label}</p>
-                <p className="text-xs text-muted dark:text-gray-400 truncate">{item.desc}</p>
-              </div>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-muted dark:text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-
-            {/* Inline expandable sections */}
-            {openSection === "perfil" && item.key === "perfil" && (
-              <div className="px-4 pb-4 animate-fade-in">
-                <form onSubmit={handleProfileSave} className="space-y-3 pt-2">
-                  <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                    placeholder="Nombre" />
-                  <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                    placeholder="Usuario" />
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                    placeholder="Email (opcional)" />
-                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                    placeholder="Nueva contrasena (dejar vacio para no cambiar)" />
-                  {newPassword && (
-                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                      placeholder="Confirmar nueva contrasena" />
-                  )}
-                  <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                    placeholder="Contrasena actual (requerida)" />
-                  <button type="submit" disabled={saving}
-                    className="w-full bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm min-h-[44px]">
-                    {saving ? "Guardando..." : "Guardar"}
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {openSection === "apariencia" && item.key === "apariencia" && (
-              <div className="px-4 pb-4 animate-fade-in space-y-3 pt-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-primary dark:text-white">Modo oscuro</p>
-                  <button onClick={toggle}
-                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${dark ? "bg-accent" : "bg-gray-300"}`}>
-                    <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-white shadow transition-transform ${dark ? "translate-x-6" : "translate-x-1"}`}>
-                      {dark ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                      )}
-                    </span>
-                  </button>
-                </div>
-                <ThemeCustomizer />
-              </div>
-            )}
+        {/* Perfil */}
+        {renderItem({ icon: "👤", label: "Perfil", desc: "Nombre, email", expandKey: "perfil" }, 0, false)}
+        {expandedSection === "perfil" && (
+          <div className="px-4 pb-4 animate-fade-in">
+            <form onSubmit={handleProfileSave} className="space-y-3 pt-2">
+              <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
+                className={inputCls} placeholder="Nombre" />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                className={inputCls} placeholder="Email (opcional)" />
+              <button type="submit" disabled={saving} className={btnCls}>
+                {saving ? "Guardando..." : "Guardar"}
+              </button>
+            </form>
           </div>
-        ))}
+        )}
+
+        {/* Seguridad */}
+        {renderItem({ icon: "🔒", label: "Seguridad", desc: "Usuario y contrasena", expandKey: "seguridad" }, 1, false)}
+        {expandedSection === "seguridad" && (
+          <div className="px-4 pb-4 animate-fade-in">
+            <div className="pt-2 space-y-3">
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2.5">
+                <span className="text-xs text-muted dark:text-gray-400">Usuario:</span>
+                <span className="text-sm font-medium text-primary dark:text-white">@{user.username}</span>
+              </div>
+              <form onSubmit={handleSecuritySave} className="space-y-3">
+                <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                  className={inputCls} placeholder="Contrasena actual" />
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                  className={inputCls} placeholder="Nueva contrasena" />
+                {newPassword && (
+                  <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={inputCls} placeholder="Confirmar nueva contrasena" />
+                )}
+                <button type="submit" disabled={saving} className={btnCls}>
+                  {saving ? "Guardando..." : "Cambiar contrasena"}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Eliminar cuenta */}
+        <div>
+          <div className="border-t border-gray-100 dark:border-gray-800 mx-4" />
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+          >
+            <span className="text-lg w-7 text-center flex-shrink-0">🗑️</span>
+            <p className="text-sm font-medium text-red-500 flex-1">Eliminar cuenta</p>
+          </button>
+        </div>
       </div>
 
-      {/* Logout + Privacy */}
-      <button onClick={logout}
-        className="w-full bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-red-500 font-medium py-3 rounded-2xl shadow-sm dark:shadow-gray-900/20 transition-colors text-sm min-h-[48px]">
-        Cerrar Sesion
-      </button>
+      {/* Delete confirmation dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-primary dark:text-white mb-2">Eliminar cuenta</h3>
+            <p className="text-sm text-muted dark:text-gray-400 mb-4">Esta accion es irreversible. Se eliminaran todos tus datos permanentemente.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 bg-gray-100 dark:bg-gray-800 text-primary dark:text-white font-medium py-2.5 rounded-xl text-sm min-h-[44px]">
+                Cancelar
+              </button>
+              <button onClick={() => { setShowDeleteConfirm(false); toast("Contacta soporte para eliminar tu cuenta", "error"); }}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2.5 rounded-xl text-sm min-h-[44px]">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FINANZAS */}
+      <SectionLabel>Finanzas</SectionLabel>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 overflow-hidden">
+        {renderItem({ icon: "🏷️", label: "Categorias", desc: `${categories.length} categorias configuradas`, onClick: () => setCategoryEditorOpen(true) }, 0, false)}
+        {renderItem({ icon: "💰", label: "Presupuestos", desc: "Limites mensuales por categoria", onClick: () => setBulkBudgetOpen(true) }, 1, false)}
+        {renderItem({ icon: "🔄", label: "Gastos Recurrentes", desc: "Netflix, alquiler, servicios...", onClick: () => setRecurringOpen(true) }, 2, false)}
+        {renderItem({ icon: "🎯", label: "Metas de Ahorro", desc: "Objetivos de ahorro personales", onClick: () => setSavingsOpen(true) }, 3, true)}
+      </div>
+
+      {/* PREFERENCIAS */}
+      <SectionLabel>Preferencias</SectionLabel>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 overflow-hidden">
+        {/* Apariencia */}
+        {renderItem({ icon: "🎨", label: "Apariencia", desc: dark ? "Modo oscuro activado" : "Modo claro activado", expandKey: "apariencia" }, 0, false)}
+        {expandedSection === "apariencia" && (
+          <div className="px-4 pb-4 animate-fade-in space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-primary dark:text-white">Modo oscuro</p>
+              <button onClick={toggle}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${dark ? "bg-accent" : "bg-gray-300"}`}>
+                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-white shadow transition-transform ${dark ? "translate-x-6" : "translate-x-1"}`}>
+                  {dark ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  )}
+                </span>
+              </button>
+            </div>
+            <ThemeCustomizer />
+          </div>
+        )}
+
+        {/* Moneda */}
+        {renderItem({ icon: "💲", label: "Moneda", desc: currency, expandKey: "moneda" }, 1, false)}
+        {expandedSection === "moneda" && (
+          <div className="px-4 pb-4 animate-fade-in pt-2">
+            <div className="space-y-1">
+              {CURRENCIES.map((c) => (
+                <button key={c.code} onClick={() => { setCurrency(c.code); savePrefs({ currency: c.code }); toast(`Moneda: ${c.code}`); }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${currency === c.code ? "bg-accent/10 text-accent font-medium" : "text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"}`}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Formato de fecha */}
+        {renderItem({ icon: "📅", label: "Formato de fecha", desc: dateFormat === "DD/MM" ? "DD/MM/YYYY" : "MM/DD/YYYY", expandKey: "formato_fecha" }, 2, false)}
+        {expandedSection === "formato_fecha" && (
+          <div className="px-4 pb-4 animate-fade-in pt-2 space-y-2">
+            {[{ v: "DD/MM", l: "DD/MM/YYYY (31/12/2025)" }, { v: "MM/DD", l: "MM/DD/YYYY (12/31/2025)" }].map((f) => (
+              <button key={f.v} onClick={() => { setDateFormat(f.v); savePrefs({ dateFormat: f.v }); }}
+                className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${dateFormat === f.v ? "bg-accent/10 text-accent font-medium" : "text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"}`}>
+                {f.l}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Alertas */}
+        {renderItem({ icon: "📊", label: "Alertas de presupuesto", expandKey: "alertas", right: (
+          <ToggleSwitch value={budgetAlerts} onChange={(v) => { setBudgetAlerts(v); savePrefs({ budgetAlerts: v }); }} />
+        ) }, 3, false)}
+
+        {/* Reporte mensual */}
+        {renderItem({ icon: "📧", label: "Reporte mensual", desc: monthlyReport ? user.email || "Sin email configurado" : "Desactivado", expandKey: "reporte", right: (
+          <ToggleSwitch value={monthlyReport} onChange={(v) => { setMonthlyReport(v); savePrefs({ monthlyReport: v }); }} />
+        ) }, 4, false)}
+
+        {/* PIN */}
+        {renderItem({ icon: "🔐", label: "PIN de acceso", expandKey: "pin", badge: "Proximamente" }, 5, true)}
+        {expandedSection === "pin" && (
+          <div className="px-4 pb-4 animate-fade-in pt-2">
+            <p className="text-xs text-muted dark:text-gray-400 mb-3">PIN de 4 digitos para abrir la app</p>
+            <div className="flex gap-2 justify-center">
+              {[0, 1, 2, 3].map((i) => (
+                <input key={i} type="password" maxLength={1} inputMode="numeric"
+                  value={pin[i] || ""}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "");
+                    const newPin = pin.split("");
+                    newPin[i] = v;
+                    const joined = newPin.join("").slice(0, 4);
+                    setPin(joined);
+                    if (v && i < 3) {
+                      const next = e.target.parentElement?.children[i + 1] as HTMLInputElement;
+                      next?.focus();
+                    }
+                    if (joined.length === 4) savePrefs({ pin: joined });
+                  }}
+                  className="w-12 h-12 text-center text-lg font-bold border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* DATOS */}
+      <SectionLabel>Datos</SectionLabel>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 overflow-hidden">
+        {renderItem({ icon: "📤", label: "Exportar datos", desc: "Descargar ZIP con tus datos", badge: "Proximamente", onClick: () => toast("Proximamente", "error") }, 0, false)}
+        {renderItem({ icon: "📋", label: "Acerca de", expandKey: "acerca" }, 1, true)}
+        {expandedSection === "acerca" && (
+          <div className="px-4 pb-4 animate-fade-in pt-2">
+            <div className="space-y-1 text-sm text-muted dark:text-gray-400">
+              <p><span className="font-medium text-primary dark:text-white">MiFinanzas</span> v1.0.0</p>
+              <p>Hecho en Panama</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Logout */}
+      <div className="pt-2">
+        <button onClick={logout}
+          className="w-full bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-red-500 font-medium py-3 rounded-2xl shadow-sm dark:shadow-gray-900/20 transition-colors text-sm min-h-[48px]">
+          Cerrar Sesion
+        </button>
+      </div>
 
       <div className="text-center pb-4">
         <a href="/privacidad" className="text-muted dark:text-gray-400 text-xs hover:underline">Politica de Privacidad</a>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { PersonalExpense, Category, PAYMENT_METHODS, DEFAULT_COLORS } from "@/lib/supabase";
+import { PersonalExpense, Category, PAYMENT_METHODS } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import ReceiptCapture from "./ReceiptCapture";
 import LocationTag from "./LocationTag";
@@ -13,7 +13,6 @@ type Props = {
   onSave: (expense: Partial<PersonalExpense>) => void;
   editingExpense: PersonalExpense | null;
   categories: Category[];
-  onCategoryCreated: () => void;
   userId: number;
   saving?: boolean;
   defaultCategory?: string;
@@ -22,7 +21,7 @@ type Props = {
 };
 
 export default function ExpenseModal({
-  isOpen, onClose, onSave, editingExpense, categories, onCategoryCreated, userId, saving,
+  isOpen, onClose, onSave, editingExpense, categories, userId, saving,
   defaultCategory, defaultPaymentMethod, duplicateExpense,
 }: Props) {
   const { authFetch } = useAuth();
@@ -31,9 +30,6 @@ export default function ExpenseModal({
   const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>(PAYMENT_METHODS[0]);
-  const [showNewCategory, setShowNewCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [creatingCategory, setCreatingCategory] = useState(false);
   const [noteSuggestions, setNoteSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const notesRef = useRef<HTMLInputElement>(null);
@@ -119,8 +115,6 @@ export default function ExpenseModal({
       setLatitude(undefined);
       setLongitude(undefined);
     }
-    setShowNewCategory(categories.length === 0);
-    setNewCategoryName("");
     setShowSuggestions(false);
     // Auto-capture location for new expenses
     if (!editingExpense && !duplicateExpense && isOpen && typeof navigator !== "undefined" && "geolocation" in navigator) {
@@ -133,35 +127,6 @@ export default function ExpenseModal({
   }, [editingExpense, duplicateExpense, isOpen, categories, defaultCategory, defaultPaymentMethod, todayStr]);
 
   if (!isOpen) return null;
-
-  const handleCategoryChange = (value: string) => {
-    if (value === "__new__") {
-      setShowNewCategory(true);
-    } else {
-      setCategory(value);
-      setShowNewCategory(false);
-    }
-  };
-
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) return;
-    setCreatingCategory(true);
-    try {
-      const colorIdx = categories.length % DEFAULT_COLORS.length;
-      const res = await authFetch("/api/categories", {
-        method: "POST",
-        body: JSON.stringify({ name: newCategoryName.trim(), color: DEFAULT_COLORS[colorIdx] }),
-      });
-      if (res.ok) {
-        setCategory(newCategoryName.trim());
-        setShowNewCategory(false);
-        setNewCategoryName("");
-        onCategoryCreated();
-      }
-    } finally {
-      setCreatingCategory(false);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,48 +215,19 @@ export default function ExpenseModal({
           </div>
           <div>
             <label className="block text-sm font-medium text-primary dark:text-white mb-1">Categoria</label>
-            {!showNewCategory ? (
+            {categories.length > 0 ? (
               <select
                 value={category}
-                onChange={(e) => handleCategoryChange(e.target.value)}
+                onChange={(e) => setCategory(e.target.value)}
                 className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
                 required
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
-                <option value="__new__">+ Crear nueva categoria...</option>
               </select>
             ) : (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
-                  placeholder="Nombre de la categoria"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateCategory}
-                  disabled={creatingCategory || !newCategoryName.trim()}
-                  className="bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold px-4 rounded-xl transition-colors text-sm min-h-[48px]"
-                >
-                  {creatingCategory ? "..." : "Crear"}
-                </button>
-                {categories.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => { setShowNewCategory(false); setCategory(categories[0].name); }}
-                    className="text-muted dark:text-gray-400 hover:text-primary dark:hover:text-white min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
+              <p className="text-sm text-muted dark:text-gray-400 py-3">Crea categorias en Configuracion</p>
             )}
           </div>
           <div className="relative">
