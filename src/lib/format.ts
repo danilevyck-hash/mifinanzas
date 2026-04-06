@@ -1,15 +1,18 @@
-export function formatCurrency(amount: number): string {
-  return "$" + amount.toLocaleString("en-US", {
+export function formatCurrency(amount: number, symbol: string = "$"): string {
+  return symbol + amount.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
-export function formatDate(dateStr: string): string {
+export function formatDate(dateStr: string, format: string = "DD/MM"): string {
   if (!dateStr) return "-";
   const date = new Date(dateStr + "T12:00:00");
   const days = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
   const [, month, day] = dateStr.split("-");
+  if (format === "MM/DD") {
+    return `${days[date.getDay()]} ${month}/${day}`;
+  }
   return `${days[date.getDay()]} ${day}/${month}`;
 }
 

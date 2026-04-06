@@ -11,7 +11,7 @@ import BulkBudgetModal from "@/components/BulkBudgetModal";
 import RecurringExpensesModal from "@/components/RecurringExpensesModal";
 import SavingsGoalsModal from "@/components/SavingsGoalsModal";
 
-type ExpandableSection = "perfil" | "seguridad" | "apariencia" | "moneda" | "formato_fecha" | "alertas" | "reporte" | "pin" | "acerca" | null;
+type ExpandableSection = "perfil" | "perfil_edit" | "seguridad" | "apariencia" | "moneda" | "formato_fecha" | "alertas" | "reporte" | "acerca" | null;
 
 const CURRENCIES = [
   { code: "USD", label: "USD - Dolar Estadounidense" },
@@ -29,7 +29,6 @@ export default function CuentaPage() {
   const [expandedSection, setExpandedSection] = useState<ExpandableSection>(null);
   const [displayName, setDisplayName] = useState(user?.display_name || "");
   const [email, setEmail] = useState(user?.email || "");
-  const [username, setUsername] = useState(user?.username || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,7 +40,6 @@ export default function CuentaPage() {
   const [dateFormat, setDateFormat] = useState("DD/MM");
   const [budgetAlerts, setBudgetAlerts] = useState(true);
   const [monthlyReport, setMonthlyReport] = useState(false);
-  const [pin, setPin] = useState("");
 
   // Data for modals
   const [categories, setCategories] = useState<Category[]>([]);
@@ -64,7 +62,6 @@ export default function CuentaPage() {
         if (p.dateFormat) setDateFormat(p.dateFormat);
         if (p.budgetAlerts !== undefined) setBudgetAlerts(p.budgetAlerts);
         if (p.monthlyReport !== undefined) setMonthlyReport(p.monthlyReport);
-        if (p.pin) setPin(p.pin);
       } catch {}
     }
   }, []);
@@ -206,12 +203,14 @@ export default function CuentaPage() {
       <h1 className="text-xl font-semibold text-primary dark:text-white text-center mb-3">Configuracion</h1>
 
       {/* User header */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5 text-center mb-2">
-        <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-2">
-          <span className="text-2xl">{user.display_name.charAt(0).toUpperCase()}</span>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-4 flex items-center gap-3 mb-2">
+        <div className="w-11 h-11 bg-accent/10 rounded-full flex items-center justify-center flex-shrink-0">
+          <span className="text-lg font-semibold text-accent">{user.display_name.charAt(0).toUpperCase()}</span>
         </div>
-        <p className="text-lg font-semibold text-primary dark:text-white">{user.display_name}</p>
-        <p className="text-sm text-muted dark:text-gray-400">@{user.username}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-primary dark:text-white truncate">{user.display_name}</p>
+          <p className="text-xs text-muted dark:text-gray-400">@{user.username}</p>
+        </div>
       </div>
 
       {/* CUENTA */}
@@ -220,15 +219,37 @@ export default function CuentaPage() {
         {/* Perfil */}
         {renderItem({ icon: "👤", label: "Perfil", desc: "Nombre, email", expandKey: "perfil" }, 0, false)}
         {expandedSection === "perfil" && (
+          <div className="px-4 pb-4 animate-fade-in pt-2 space-y-2">
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-xs text-muted dark:text-gray-400">Nombre</span>
+              <span className="text-sm text-primary dark:text-white">{user.display_name}</span>
+            </div>
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-xs text-muted dark:text-gray-400">Email</span>
+              <span className="text-sm text-primary dark:text-white">{user.email || "Sin email"}</span>
+            </div>
+            <button onClick={() => { setDisplayName(user.display_name); setEmail(user.email || ""); setExpandedSection("perfil_edit"); }}
+              className="w-full text-accent text-sm font-medium py-2 hover:text-accent-light transition-colors">
+              Editar perfil
+            </button>
+          </div>
+        )}
+        {expandedSection === "perfil_edit" && (
           <div className="px-4 pb-4 animate-fade-in">
             <form onSubmit={handleProfileSave} className="space-y-3 pt-2">
               <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
                 className={inputCls} placeholder="Nombre" />
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 className={inputCls} placeholder="Email (opcional)" />
-              <button type="submit" disabled={saving} className={btnCls}>
-                {saving ? "Guardando..." : "Guardar"}
-              </button>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setExpandedSection("perfil")}
+                  className="flex-1 bg-gray-100 dark:bg-gray-800 text-primary dark:text-white font-medium py-2.5 rounded-xl text-sm min-h-[44px]">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={saving} className="flex-1 bg-accent hover:bg-accent-light disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm min-h-[44px]">
+                  {saving ? "Guardando..." : "Guardar"}
+                </button>
+              </div>
             </form>
           </div>
         )}
@@ -239,7 +260,7 @@ export default function CuentaPage() {
           <div className="px-4 pb-4 animate-fade-in">
             <div className="pt-2 space-y-3">
               <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2.5">
-                <span className="text-xs text-muted dark:text-gray-400">Usuario:</span>
+                <span className="text-xs text-muted dark:text-gray-400">Usuario de acceso:</span>
                 <span className="text-sm font-medium text-primary dark:text-white">@{user.username}</span>
               </div>
               <form onSubmit={handleSecuritySave} className="space-y-3">
@@ -247,6 +268,28 @@ export default function CuentaPage() {
                   className={inputCls} placeholder="Contrasena actual" />
                 <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
                   className={inputCls} placeholder="Nueva contrasena" />
+                {newPassword && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700">
+                      <div className={`h-full rounded-full transition-all ${
+                        newPassword.length >= 12 || /[A-Z].*[0-9]|[0-9].*[A-Z]/.test(newPassword)
+                          ? "w-full bg-green-500"
+                          : newPassword.length >= 8
+                            ? "w-2/3 bg-amber-500"
+                            : "w-1/3 bg-red-500"
+                      }`} />
+                    </div>
+                    <span className={`text-xs ${
+                      newPassword.length >= 12 || /[A-Z].*[0-9]|[0-9].*[A-Z]/.test(newPassword)
+                        ? "text-green-500"
+                        : newPassword.length >= 8
+                          ? "text-amber-500"
+                          : "text-red-500"
+                    }`}>
+                      {newPassword.length >= 12 || /[A-Z].*[0-9]|[0-9].*[A-Z]/.test(newPassword) ? "Fuerte" : newPassword.length >= 8 ? "Media" : "Muy corta"}
+                    </span>
+                  </div>
+                )}
                 {newPassword && (
                   <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                     className={inputCls} placeholder="Confirmar nueva contrasena" />
@@ -296,9 +339,9 @@ export default function CuentaPage() {
       <SectionLabel>Finanzas</SectionLabel>
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 overflow-hidden">
         {renderItem({ icon: "🏷️", label: "Categorias", desc: `${categories.length} categorias configuradas`, onClick: () => setCategoryEditorOpen(true) }, 0, false)}
-        {renderItem({ icon: "💰", label: "Presupuestos", desc: "Limites mensuales por categoria", onClick: () => setBulkBudgetOpen(true) }, 1, false)}
-        {renderItem({ icon: "🔄", label: "Gastos Recurrentes", desc: "Netflix, alquiler, servicios...", onClick: () => setRecurringOpen(true) }, 2, false)}
-        {renderItem({ icon: "🎯", label: "Metas de Ahorro", desc: "Objetivos de ahorro personales", onClick: () => setSavingsOpen(true) }, 3, true)}
+        {renderItem({ icon: "💰", label: "Presupuestos", desc: `${budgets.length} de ${categories.length} con presupuesto`, onClick: () => setBulkBudgetOpen(true) }, 1, false)}
+        {renderItem({ icon: "🔄", label: "Gastos Recurrentes", desc: "Gastos que se repiten cada mes", onClick: () => setRecurringOpen(true) }, 2, false)}
+        {renderItem({ icon: "🎯", label: "Metas de Ahorro", desc: "Configura tus metas de ahorro", onClick: () => setSavingsOpen(true) }, 3, true)}
       </div>
 
       {/* PREFERENCIAS */}
@@ -358,54 +401,32 @@ export default function CuentaPage() {
         )}
 
         {/* Alertas */}
-        {renderItem({ icon: "📊", label: "Alertas de presupuesto", expandKey: "alertas", right: (
+        {renderItem({ icon: "📊", label: "Alertas de presupuesto", desc: "Notificaciones al 80% y 100% del presupuesto", expandKey: "alertas", right: (
           <ToggleSwitch value={budgetAlerts} onChange={(v) => { setBudgetAlerts(v); savePrefs({ budgetAlerts: v }); }} />
         ) }, 3, false)}
 
         {/* Reporte mensual */}
         {renderItem({ icon: "📧", label: "Reporte mensual", desc: monthlyReport ? user.email || "Sin email configurado" : "Desactivado", expandKey: "reporte", right: (
-          <ToggleSwitch value={monthlyReport} onChange={(v) => { setMonthlyReport(v); savePrefs({ monthlyReport: v }); }} />
+          <ToggleSwitch value={monthlyReport} onChange={(v) => {
+            if (v && !user.email) { toast("Configura tu email primero en Perfil", "error"); return; }
+            setMonthlyReport(v); savePrefs({ monthlyReport: v });
+          }} />
         ) }, 4, false)}
 
-        {/* PIN */}
-        {renderItem({ icon: "🔐", label: "PIN de acceso", expandKey: "pin", badge: "Proximamente" }, 5, true)}
-        {expandedSection === "pin" && (
-          <div className="px-4 pb-4 animate-fade-in pt-2">
-            <p className="text-xs text-muted dark:text-gray-400 mb-3">PIN de 4 digitos para abrir la app</p>
-            <div className="flex gap-2 justify-center">
-              {[0, 1, 2, 3].map((i) => (
-                <input key={i} type="password" maxLength={1} inputMode="numeric"
-                  value={pin[i] || ""}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, "");
-                    const newPin = pin.split("");
-                    newPin[i] = v;
-                    const joined = newPin.join("").slice(0, 4);
-                    setPin(joined);
-                    if (v && i < 3) {
-                      const next = e.target.parentElement?.children[i + 1] as HTMLInputElement;
-                      next?.focus();
-                    }
-                    if (joined.length === 4) savePrefs({ pin: joined });
-                  }}
-                  className="w-12 h-12 text-center text-lg font-bold border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-primary dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* DATOS */}
-      <SectionLabel>Datos</SectionLabel>
+      {/* INFO */}
+      <SectionLabel>Info</SectionLabel>
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 overflow-hidden">
-        {renderItem({ icon: "📤", label: "Exportar datos", desc: "Descargar ZIP con tus datos", badge: "Proximamente", onClick: () => toast("Proximamente", "error") }, 0, false)}
-        {renderItem({ icon: "📋", label: "Acerca de", expandKey: "acerca" }, 1, true)}
+        {renderItem({ icon: "📋", label: "Acerca de", expandKey: "acerca" }, 0, true)}
         {expandedSection === "acerca" && (
           <div className="px-4 pb-4 animate-fade-in pt-2">
             <div className="space-y-1 text-sm text-muted dark:text-gray-400">
               <p><span className="font-medium text-primary dark:text-white">MiFinanzas</span> v1.0.0</p>
-              <p>Hecho en Panama</p>
+              <p>Hecho en Panama 🇵🇦</p>
+              <p className="mt-2">
+                <a href="mailto:soporte@mifinanzas.app" className="text-accent hover:underline">Enviar feedback</a>
+              </p>
             </div>
           </div>
         )}
