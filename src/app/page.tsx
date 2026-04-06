@@ -12,10 +12,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { KPISkeleton, CategorySkeleton } from "@/components/SkeletonLoader";
 import ImportModal from "@/components/ImportModal";
 import { usePreferences } from "@/lib/usePreferences";
-import dynamic from "next/dynamic";
 import React from "react";
-
-const DailyChart = dynamic(() => import("@/components/DailyChart"), { ssr: false });
 
 export default function Home() {
   return (
@@ -453,88 +450,67 @@ function HomeContent() {
         </button>
       </div>
 
-      {/* vs mes anterior */}
-      {!loading && prevMonthData.hasData && prevMonthData.total >= 50 && (() => {
-        const diff = totalMonth - prevMonthData.total;
-        const changePct = prevMonthData.total > 0 ? (diff / prevMonthData.total) * 100 : 0;
-        const isMore = diff > 0;
-        return (
-          <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
-            <div className="grid grid-cols-2">
-              <div className="p-4">
-                <p className="text-[11px] text-[#8E8E93] uppercase">Este mes</p>
-                <p className="text-[22px] font-semibold mt-1 leading-tight tabular-nums text-primary dark:text-white">{formatCurrency(totalMonth)}</p>
-              </div>
-              <div className="p-4 border-l border-[#C6C6C8]/20 dark:border-gray-800">
-                <p className="text-[11px] text-[#8E8E93] uppercase">Mes anterior</p>
-                <p className="text-[22px] font-semibold mt-1 leading-tight tabular-nums text-primary dark:text-white">{formatCurrency(prevMonthData.total)}</p>
-              </div>
-            </div>
-            <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-center">
-              <span className={`text-[13px] font-semibold ${isMore ? "text-red-500" : "text-green-500"}`}>
-                {isMore ? "↑" : "↓"} {isMore ? "+" : ""}{Math.round(changePct)}% ({isMore ? `+${formatCurrency(diff)}` : `-${formatCurrency(Math.abs(diff))}`})
-              </span>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Budget KPIs */}
+      {/* KPIs */}
       {loading ? (
         <KPISkeleton />
-      ) : hasBudgets ? (
-        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
-          <div className="grid grid-cols-2">
-            <div className="p-4">
-              <p className="text-[11px] text-[#8E8E93] uppercase">Gastado</p>
-              <p className={`text-[28px] font-semibold mt-1 leading-tight tabular-nums ${spentPct >= 100 ? "text-red-500" : spentPct >= 80 ? "text-amber-500" : "text-primary dark:text-white"}`}>{formatCurrency(totalMonth)}</p>
-              <p className="text-[11px] text-[#8E8E93] mt-1">
-                de {formatCurrency(budgetTotal)} · {expenses.length} gasto{expenses.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-            <div className="p-4 border-l border-[#C6C6C8]/20 dark:border-gray-800">
-              <p className="text-[11px] text-[#8E8E93] uppercase">Disponible</p>
-              <p className={`text-[28px] font-semibold mt-1 leading-tight tabular-nums ${available < 0 ? "text-red-500" : "text-primary dark:text-white"}`}>
-                {available < 0 ? `-${formatCurrency(Math.abs(available))}` : formatCurrency(available)}
-              </p>
-              {isCurrentMonth && (
-                <p className="text-[11px] text-[#8E8E93] mt-1">
-                  {daysRemaining === 0 ? "ultimo dia del mes" : `quedan ${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""}`}
-                </p>
-              )}
-            </div>
-          </div>
-          {isCurrentMonth && daysPassed > 0 && expenses.length > 0 && (
-            <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between">
-              <span className="text-[13px] text-[#8E8E93]">Proyeccion fin de mes</span>
-              <span className={`text-[13px] font-semibold tabular-nums ${projected > budgetTotal ? "text-red-500" : "text-green-500"}`}>
-                {formatCurrency(projected)}
-              </span>
-            </div>
-          )}
-        </div>
       ) : (
         <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
-          <div className="p-5 text-center">
-            <p className="text-[11px] text-[#8E8E93] uppercase">Total {MONTH_NAMES[viewMonth]}</p>
-            <p className="text-3xl font-bold text-primary dark:text-white mt-1 tabular-nums">{formatCurrency(totalMonth)}</p>
-            <p className="text-[11px] text-[#8E8E93] mt-1">{expenses.length} gasto{expenses.length !== 1 ? "s" : ""}</p>
+          {/* Main amount */}
+          <div className="px-5 pt-5 pb-3 text-center">
+            <p className={`text-[34px] font-bold leading-tight tabular-nums ${hasBudgets && spentPct >= 100 ? "text-red-500" : hasBudgets && spentPct >= 80 ? "text-amber-500" : "text-primary dark:text-white"}`}>
+              {formatCurrency(totalMonth)}
+            </p>
+            <p className="text-[13px] text-[#8E8E93] mt-1">
+              {hasBudgets
+                ? `de ${formatCurrency(budgetTotal)} · quedan ${formatCurrency(Math.max(available, 0))}`
+                : `${expenses.length} gasto${expenses.length !== 1 ? "s" : ""}`
+              }
+            </p>
           </div>
-          {isCurrentMonth && daysPassed > 0 && expenses.length > 0 && (
-            <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 px-4 py-2.5 flex items-center justify-between">
-              <span className="text-[13px] text-[#8E8E93]">Proyeccion fin de mes</span>
-              <span className="text-[13px] font-semibold tabular-nums text-primary dark:text-white">
-                {formatCurrency(projected)}
-              </span>
+
+          {/* Mini KPIs row */}
+          {(prevMonthData.hasData || (isCurrentMonth && daysPassed > 0 && expenses.length > 0)) && (
+            <div className="border-t border-[#C6C6C8]/20 dark:border-gray-800 grid grid-cols-2 divide-x divide-[#C6C6C8]/20 dark:divide-gray-800">
+              {/* vs mes anterior (mismo periodo) */}
+              {prevMonthData.hasData && prevMonthData.total > 0 ? (() => {
+                const diff = totalMonth - prevMonthData.total;
+                const changePct = (diff / prevMonthData.total) * 100;
+                const isMore = diff > 0;
+                return (
+                  <div className="px-4 py-3 text-center">
+                    <p className="text-[11px] text-[#8E8E93] uppercase">vs mes anterior</p>
+                    <p className={`text-[17px] font-semibold mt-0.5 tabular-nums ${isMore ? "text-red-500" : "text-green-500"}`}>
+                      {isMore ? "+" : ""}{Math.round(changePct)}%
+                    </p>
+                    <p className="text-[11px] text-[#8E8E93]">al dia {daysPassed}</p>
+                  </div>
+                );
+              })() : (
+                <div className="px-4 py-3 text-center">
+                  <p className="text-[11px] text-[#8E8E93] uppercase">vs mes anterior</p>
+                  <p className="text-[15px] text-[#8E8E93] mt-0.5">—</p>
+                </div>
+              )}
+
+              {/* Proyeccion */}
+              {isCurrentMonth && daysPassed > 0 && expenses.length > 0 ? (
+                <div className="px-4 py-3 text-center">
+                  <p className="text-[11px] text-[#8E8E93] uppercase">Proyeccion</p>
+                  <p className={`text-[17px] font-semibold mt-0.5 tabular-nums ${hasBudgets && projected > budgetTotal ? "text-red-500" : "text-primary dark:text-white"}`}>
+                    {formatCurrency(projected)}
+                  </p>
+                  <p className="text-[11px] text-[#8E8E93]">fin de mes</p>
+                </div>
+              ) : (
+                <div className="px-4 py-3 text-center">
+                  <p className="text-[11px] text-[#8E8E93] uppercase">Dias restantes</p>
+                  <p className="text-[17px] font-semibold mt-0.5 tabular-nums text-primary dark:text-white">
+                    {daysRemaining}
+                  </p>
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Daily chart */}
-      {!loading && expenses.length > 0 && (
-        <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4">
-          <DailyChart expenses={expenses} daysInMonth={lastDay} budgetTotal={hasBudgets ? budgetTotal : undefined} />
         </div>
       )}
 
