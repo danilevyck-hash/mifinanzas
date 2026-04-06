@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { PersonalExpense, Category, CategoryBudget, PAYMENT_METHODS } from "@/lib/supabase";
+import { PersonalExpense, Category, CategoryBudget, PAYMENT_METHODS, getCategoryIcon } from "@/lib/supabase";
 import { formatCurrency, formatDate, MONTH_NAMES } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
@@ -11,6 +11,13 @@ import ExportModal from "@/components/ExportModal";
 import BudgetModal from "@/components/BudgetModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { KPISkeleton, CategorySkeleton } from "@/components/SkeletonLoader";
+import dynamic from "next/dynamic";
+import RecurringExpensesModal from "@/components/RecurringExpensesModal";
+import IncomeModal from "@/components/IncomeModal";
+import ImportModal from "@/components/ImportModal";
+import Confetti from "@/components/Confetti";
+
+const DailyChart = dynamic(() => import("@/components/DailyChart"), { ssr: false });
 
 export default function Home() {
   return (
@@ -49,6 +56,11 @@ function HomeContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterMethod, setFilterMethod] = useState("");
+  const [recurringOpen, setRecurringOpen] = useState(false);
+  const [incomeOpen, setIncomeOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [confettiShown, setConfettiShown] = useState(false);
 
   const viewMonthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
   const dateFrom = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
@@ -278,6 +290,15 @@ function HomeContent() {
     }
   }, [alertsShown, categoryData, sortedCategoryData, budgets, budgetMap, toast]);
 
+  // Confetti: show when viewing current month, have budgets, and under budget
+  useEffect(() => {
+    if (confettiShown || !hasBudgets || loading || !isCurrentMonth) return;
+    if (daysPassed >= 25 && spentPct < 100 && expenses.length > 0) {
+      setShowConfetti(true);
+      setConfettiShown(true);
+    }
+  }, [confettiShown, hasBudgets, loading, isCurrentMonth, daysPassed, spentPct, expenses.length]);
+
   const methodData = useMemo(() => {
     const map: Record<string, number> = {};
     expenses.forEach((e) => { map[e.payment_method] = (map[e.payment_method] || 0) + e.amount; });
@@ -416,7 +437,7 @@ function HomeContent() {
                   <div className="flex items-center justify-between text-sm mb-1 gap-2">
                     <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                      <span className="font-medium text-primary dark:text-white">{cat.name}</span>
+                      <span className="font-medium text-primary dark:text-white">{getCategoryIcon(cat.name)} {cat.name}</span>
                       <button
                         onClick={() => { setBudgetCategory(cat.name); setBudgetModalOpen(true); }}
                         className="text-muted dark:text-gray-400 hover:text-accent transition-colors"
@@ -468,12 +489,20 @@ function HomeContent() {
             {categoryData.map((cat) => (
               <div key={cat.name} className="flex items-center gap-1.5 text-xs">
                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                <span className="text-muted dark:text-gray-400">{cat.name}</span>
+                <span className="text-muted dark:text-gray-400">{getCategoryIcon(cat.name)} {cat.name}</span>
               </div>
             ))}
           </div>
         </div>
       ) : null}
+
+      {/* Daily spending chart */}
+      {expenses.length > 0 && (
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-gray-900/20 p-5">
+          <h2 className="text-base font-semibold text-primary dark:text-white mb-3">Tendencia diaria</h2>
+          <DailyChart expenses={expenses} daysInMonth={lastDay} budgetTotal={hasBudgets ? budgetTotal : undefined} />
+        </div>
+      )}
 
       {/* Payment method breakdown */}
       {methodData.length > 0 && (
@@ -532,7 +561,28 @@ function HomeContent() {
       )}
 
       {/* Action buttons */}
-      <div className="flex flex-wrap justify-end gap-3">
+      <div className="flex flex-wrap justify-end gap-2">
+        <button onClick={() => setRecurringOpen(true)}
+          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-1.5 min-h-[44px]">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Recurrentes
+        </button>
+        <button onClick={() => setIncomeOpen(true)}
+          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-1.5 min-h-[44px]">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Ingresos
+        </button>
+        <button onClick={() => setImportOpen(true)}
+          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-1.5 min-h-[44px]">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          Importar
+        </button>
         <button onClick={() => setExportOpen(true)}
           className="bg-white dark:bg-gray-900 border-2 border-primary text-primary dark:text-white hover:bg-primary hover:text-white font-semibold px-5 py-3 rounded-xl shadow-sm dark:shadow-gray-900/20 transition-colors flex items-center gap-2 min-h-[48px]">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -758,6 +808,23 @@ function HomeContent() {
         existingBudget={budgets.find((b) => b.category === budgetCategory) || null}
         onSaved={fetchBudgets}
       />
+      <RecurringExpensesModal
+        isOpen={recurringOpen}
+        onClose={() => setRecurringOpen(false)}
+        categories={categories}
+      />
+      <IncomeModal
+        isOpen={incomeOpen}
+        onClose={() => setIncomeOpen(false)}
+        onSave={() => { setIncomeOpen(false); }}
+        editingIncome={null}
+      />
+      <ImportModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        onComplete={() => { setImportOpen(false); fetchExpenses(); fetchAllExpenses(); }}
+      />
+      <Confetti show={showConfetti} onComplete={() => setShowConfetti(false)} />
     </div>
   );
 }
