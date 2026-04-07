@@ -21,10 +21,7 @@ export type PersonalExpense = {
   notes?: string;
   payment_method: string;
   receipt_url?: string;
-  latitude?: number;
-  longitude?: number;
   subcategory?: string;
-  split_count?: number;
   created_at?: string;
 };
 
@@ -65,17 +62,21 @@ export type RecurringExpense = {
 };
 
 export const CATEGORY_ICONS: Record<string, string> = {
-  "Casa": "\u{1F3E0}", "Hogar": "\u{1F3E0}", "Alquiler": "\u{1F3E0}",
-  "Carro": "\u{1F697}", "Auto": "\u{1F697}", "Transporte": "\u{1F697}",
-  "Comida": "\u{1F354}", "Restaurante": "\u{1F354}", "Mercado": "\u{1F6D2}",
-  "Salud": "\u{1F48A}", "Medicina": "\u{1F48A}",
-  "Entretenimiento": "\u{1F3AE}", "Ocio": "\u{1F3AE}",
-  "Ropa": "\u{1F455}", "Shopping": "\u{1F6CD}\u{FE0F}",
-  "Educacion": "\u{1F4DA}", "Tecnologia": "\u{1F4BB}",
-  "Servicios": "\u26A1", "Internet": "\u{1F4F1}",
+  // Default categories
+  "Comida": "\u{1F354}", "Supermercado": "\u{1F6D2}", "Transporte": "\u{1F697}",
+  "Hogar": "\u{1F3E0}", "Salud": "\u{1F48A}", "Entretenimiento": "\u{1F3AE}",
+  "Ropa": "\u{1F455}", "Educación": "\u{1F4DA}", "Servicios": "\u26A1",
+  "Personal": "\u{1F486}", "Mascotas": "\u{1F43E}", "Viajes": "\u2708\u{FE0F}",
+  "Regalos": "\u{1F381}", "Otros": "\u{1F4CC}",
+  // Legacy/backward compat
+  "Casa": "\u{1F3E0}", "Alquiler": "\u{1F3E0}",
+  "Carro": "\u{1F697}", "Auto": "\u{1F697}",
+  "Restaurante": "\u{1F354}", "Mercado": "\u{1F6D2}",
+  "Medicina": "\u{1F48A}", "Ocio": "\u{1F3AE}",
+  "Shopping": "\u{1F6CD}\u{FE0F}", "Educacion": "\u{1F4DA}",
+  "Tecnologia": "\u{1F4BB}", "Internet": "\u{1F4F1}",
   "Gym": "\u{1F4AA}", "Deporte": "\u{1F4AA}",
-  "Mascotas": "\u{1F43E}", "Viaje": "\u2708\u{FE0F}",
-  "Ahorro": "\u{1F4B0}", "Inversiones": "\u{1F4C8}",
+  "Viaje": "\u2708\u{FE0F}", "Ahorro": "\u{1F4B0}", "Inversiones": "\u{1F4C8}",
 };
 
 export function getCategoryIcon(name: string): string {

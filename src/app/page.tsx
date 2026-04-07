@@ -10,7 +10,7 @@ import ExpenseModal from "@/components/ExpenseModal";
 import ExportModal from "@/components/ExportModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { KPISkeleton, CategorySkeleton } from "@/components/SkeletonLoader";
-import ImportModal from "@/components/ImportModal";
+
 import { usePreferences } from "@/lib/usePreferences";
 import React from "react";
 
@@ -48,7 +48,6 @@ function HomeContent() {
   const [alertsShown, setAlertsShown] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [importOpen, setImportOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
@@ -805,11 +804,6 @@ function HomeContent() {
         defaultPaymentMethod={prefs.last_payment_method}
       />
       <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} expenses={allExpenses} categories={categories} />
-      <ImportModal
-        isOpen={importOpen}
-        onClose={() => setImportOpen(false)}
-        onComplete={() => { setImportOpen(false); fetchExpenses(); fetchAllExpenses(); }}
-      />
     </div>
 
     {/* Action sheet for "Mas" menu */}
@@ -820,9 +814,6 @@ function HomeContent() {
           <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden">
             <button onClick={() => { setExportOpen(true); setMoreMenuOpen(false); }}
               className="w-full py-3.5 text-[17px] text-[#007AFF] font-medium">Exportar</button>
-            <div className="border-t border-[#C6C6C8]/30 dark:border-gray-700/50" />
-            <button onClick={() => { setImportOpen(true); setMoreMenuOpen(false); }}
-              className="w-full py-3.5 text-[17px] text-[#007AFF] font-medium">Importar CSV</button>
           </div>
           <button onClick={() => setMoreMenuOpen(false)}
             className="w-full mt-2 bg-white dark:bg-[#1C1C1E] rounded-2xl py-3.5 text-[17px] text-[#007AFF] font-semibold">

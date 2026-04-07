@@ -124,3 +124,25 @@ git push origin main   # Auto-deploy via Vercel
 - `NEXT_PUBLIC_SUPABASE_URL` — URL del proyecto Supabase
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon key
 - `ANTHROPIC_API_KEY` — Claude Vision para OCR de recibos
+
+## Sincronización MiFinanzas <-> Maaser/Finanzas
+
+**REGLA IMPORTANTE:** Cada cambio en el módulo de finanzas (features, bug fixes, UI changes) DEBE hacerse simultáneamente en:
+1. `~/Desktop/APPS/mifinanzas` (app independiente, multi-usuario)
+2. `~/Desktop/APPS/maaser/src/app/finanzas` + `~/Desktop/APPS/maaser/src/components/finanzas` (módulo dentro de maaser, single-user PIN)
+
+### Diferencias entre ambas versiones:
+| Aspecto | MiFinanzas | Maaser/Finanzas |
+|---------|-----------|-----------------|
+| Auth | username/password (authFetch) | PIN cookie (fetch directo) |
+| User ID | user_id en todas las tablas/queries | Sin user_id (single user) |
+| Dark mode | Sí | No |
+| Tablas | personal_expenses, categories, category_budgets, recurring_expenses | finance_expenses, finance_categories, finance_budgets, finance_recurring |
+| APIs | /api/personal-expenses, /api/categories, /api/category-budgets, /api/recurring-expenses | /api/finanzas/expenses, /api/finanzas/categories, /api/finanzas/budgets, /api/finanzas/recurring |
+| Estilo | Apple iOS con dark mode | Apple iOS sin dark mode |
+| Categorías | default-categories.ts | finance-categories.ts (mismo contenido) |
+
+### Al hacer cambios:
+1. Implementar en mifinanzas primero
+2. Copiar/adaptar en maaser removiendo user_id, authFetch, y dark mode
+3. Verificar build en ambos proyectos

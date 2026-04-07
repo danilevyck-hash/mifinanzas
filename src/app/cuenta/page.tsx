@@ -10,15 +10,7 @@ import BulkBudgetModal from "@/components/BulkBudgetModal";
 import RecurringExpensesModal from "@/components/RecurringExpensesModal";
 
 
-type Section = "perfil_edit" | "seguridad" | "moneda" | "formato_fecha" | null;
-
-const CURRENCIES = [
-  { code: "USD", symbol: "$", label: "Dolar (USD)" },
-  { code: "PAB", symbol: "B/.", label: "Balboa (PAB)" },
-  { code: "COP", symbol: "$", label: "Peso Colombiano (COP)" },
-  { code: "MXN", symbol: "$", label: "Peso Mexicano (MXN)" },
-  { code: "EUR", symbol: "€", label: "Euro (EUR)" },
-];
+type Section = "perfil_edit" | "seguridad" | null;
 
 export default function CuentaPage() {
   const { user, logout, authFetch, refreshUser } = useAuth();
@@ -35,8 +27,6 @@ export default function CuentaPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
 
-  const [currency, setCurrency] = useState("USD");
-  const [dateFormat, setDateFormat] = useState("DD/MM");
   const [budgetAlerts, setBudgetAlerts] = useState(true);
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -54,8 +44,6 @@ export default function CuentaPage() {
     if (prefs) {
       try {
         const p = JSON.parse(prefs);
-        if (p.currency) setCurrency(p.currency);
-        if (p.dateFormat) setDateFormat(p.dateFormat);
         if (p.budgetAlerts !== undefined) setBudgetAlerts(p.budgetAlerts);
       } catch {}
     }
@@ -221,40 +209,6 @@ export default function CuentaPage() {
       <SectionHeader>Preferencias</SectionHeader>
       <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
         <Cell label="Modo oscuro" toggle={dark} onToggle={toggle} />
-        <Divider />
-        <Cell label="Moneda" value={currency} onClick={() => setOpenSection(openSection === "moneda" ? null : "moneda")} />
-        {openSection === "moneda" && (
-          <div className="px-4 pb-3 animate-fade-in">
-            {CURRENCIES.map((c) => (
-              <button key={c.code} onClick={() => { setCurrency(c.code); savePrefs({ currency: c.code }); setOpenSection(null); toast(`Moneda: ${c.code}`); }}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[15px] text-primary dark:text-white">
-                <span>{c.label}</span>
-                {currency === c.code && (
-                  <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-        <Divider />
-        <Cell label="Formato de fecha" value={dateFormat === "DD/MM" ? "DD/MM" : "MM/DD"} onClick={() => setOpenSection(openSection === "formato_fecha" ? null : "formato_fecha")} />
-        {openSection === "formato_fecha" && (
-          <div className="px-4 pb-3 animate-fade-in">
-            {[{ v: "DD/MM", l: "31/12/2025" }, { v: "MM/DD", l: "12/31/2025" }].map((f) => (
-              <button key={f.v} onClick={() => { setDateFormat(f.v); savePrefs({ dateFormat: f.v }); setOpenSection(null); toast("Formato actualizado"); }}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[15px] text-primary dark:text-white">
-                <span>{f.l}</span>
-                {dateFormat === f.v && (
-                  <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
         <Divider />
         <Cell label="Alertas de presupuesto" toggle={budgetAlerts} onToggle={(v) => { setBudgetAlerts(v); savePrefs({ budgetAlerts: v }); toast(v ? "Alertas activadas" : "Alertas desactivadas"); }} />
       </div>

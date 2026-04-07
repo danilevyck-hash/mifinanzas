@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 
 export async function POST(request: NextRequest) {
   const { display_name, username, password, email } = await request.json();
@@ -71,16 +72,12 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (newUser) {
-    const defaultCategories = [
-      { user_id: newUser.id, name: "Casa", color: "#3B82F6", icon: "🏠" },
-      { user_id: newUser.id, name: "Comida", color: "#F59E0B", icon: "🍔" },
-      { user_id: newUser.id, name: "Transporte", color: "#EF4444", icon: "🚗" },
-      { user_id: newUser.id, name: "Servicios", color: "#8B5CF6", icon: "⚡" },
-      { user_id: newUser.id, name: "Salud", color: "#10B981", icon: "💊" },
-      { user_id: newUser.id, name: "Entretenimiento", color: "#EC4899", icon: "🎮" },
-      { user_id: newUser.id, name: "Ropa", color: "#14B8A6", icon: "👕" },
-      { user_id: newUser.id, name: "Educacion", color: "#06B6D4", icon: "📚" },
-    ];
+    const defaultCategories = DEFAULT_CATEGORIES.map((c) => ({
+      user_id: newUser.id,
+      name: c.name,
+      color: c.color,
+      icon: c.icon,
+    }));
     await supabaseAdmin.from("categories").insert(defaultCategories);
   }
 

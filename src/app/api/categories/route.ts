@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase-server";
 import { getAuthUserId } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
-import { getCategoryIcon } from "@/lib/supabase";
+import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 
 export async function GET(request: NextRequest) {
   const userId = getAuthUserId(request);
@@ -14,78 +14,69 @@ export async function GET(request: NextRequest) {
     .order("name");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data || []);
+
+  // Auto-initialize: if user has 0 categories, insert all defaults
+  if (!data || data.length === 0) {
+    const toInsert = DEFAULT_CATEGORIES.map((c) => ({
+      user_id: userId,
+      name: c.name,
+      color: c.color,
+      icon: c.icon,
+    }));
+    const { data: inserted, error: insertError } = await supabaseAdmin
+      .from("categories")
+      .insert(toInsert)
+      .select();
+    if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
+    return NextResponse.json(inserted || []);
+  }
+
+  return NextResponse.json(data);
 }
 
+// Toggle category on/off
 export async function POST(request: NextRequest) {
   const userId = getAuthUserId(request);
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const body = await request.json();
-  const icon = body.icon || getCategoryIcon(body.name);
+  const { name, enabled } = body;
 
-  const { data, error } = await supabaseAdmin
-    .from("categories")
-    .insert([{ user_id: userId, name: body.name, color: body.color, icon }])
-    .select()
-    .single();
+  if (!name) return NextResponse.json({ error: "Falta el nombre" }, { status: 400 });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
-}
+  const defaultCat = DEFAULT_CATEGORIES.find((c) => c.name === name);
+  if (!defaultCat) return NextResponse.json({ error: "Categoria no valida" }, { status: 400 });
 
-export async function PUT(request: NextRequest) {
-  const userId = getAuthUserId(request);
-  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-
-  const body = await request.json();
-  const { id, color, icon, new_name } = body;
-
-  if (!id) {
-    return NextResponse.json({ error: "Falta el id" }, { status: 400 });
-  }
-
-  // If renaming, migrate expenses and budgets first
-  if (new_name) {
-    const { data: current } = await supabaseAdmin
+  if (enabled) {
+    // Check if already exists
+    const { data: existing } = await supabaseAdmin
       .from("categories")
-      .select("name")
-      .eq("id", id)
+      .select("id")
       .eq("user_id", userId)
+      .eq("name", name)
       .single();
 
-    if (current && current.name !== new_name) {
-      // Migrate expenses
-      await supabaseAdmin
-        .from("personal_expenses")
-        .update({ category: new_name })
-        .eq("user_id", userId)
-        .eq("category", current.name);
+    if (existing) return NextResponse.json(existing);
 
-      // Migrate budgets
-      await supabaseAdmin
-        .from("category_budgets")
-        .update({ category: new_name })
-        .eq("user_id", userId)
-        .eq("category", current.name);
-    }
+    const { data, error } = await supabaseAdmin
+      .from("categories")
+      .insert([{ user_id: userId, name: defaultCat.name, color: defaultCat.color, icon: defaultCat.icon }])
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
+  } else {
+    // Delete category (expenses keep their category name)
+    const { error } = await supabaseAdmin
+      .from("categories")
+      .delete()
+      .eq("user_id", userId)
+      .eq("name", name);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true });
   }
-
-  const updates: Record<string, string> = {};
-  if (color !== undefined) updates.color = color;
-  if (icon !== undefined) updates.icon = icon;
-  if (new_name) updates.name = new_name;
-
-  const { data, error } = await supabaseAdmin
-    .from("categories")
-    .update(updates)
-    .eq("id", id)
-    .eq("user_id", userId)
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
 }
 
 export async function DELETE(request: NextRequest) {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { PersonalExpense, Category, PAYMENT_METHODS } from "@/lib/supabase";
+import { detectCategory } from "@/lib/default-categories";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import ReceiptCapture from "./ReceiptCapture";
@@ -37,6 +38,8 @@ export default function ExpenseModal({
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>(undefined);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [autoDetected, setAutoDetected] = useState(false);
+  const [manualCategoryChange, setManualCategoryChange] = useState(false);
 
   const todayStr = new Date().toISOString().split("T")[0];
   const yesterdayDate = new Date();
@@ -57,6 +60,29 @@ export default function ExpenseModal({
       .then((d) => { if (Array.isArray(d)) setNoteSuggestions(d); })
       .catch(() => {});
   }, [category, isOpen, authFetch]);
+
+  // Auto-detect category from notes (300ms debounce)
+  const enabledCategoryNames = categories.map((c) => c.name);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableEnabledNames = JSON.stringify(enabledCategoryNames);
+
+  useEffect(() => {
+    if (!isOpen || manualCategoryChange || !notes) {
+      if (!notes && autoDetected) setAutoDetected(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const parsed = JSON.parse(stableEnabledNames) as string[];
+      const detected = detectCategory(notes, parsed);
+      if (detected) {
+        setCategory(detected);
+        setAutoDetected(true);
+      } else {
+        setAutoDetected(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [notes, stableEnabledNames, isOpen, manualCategoryChange, autoDetected]);
 
   // Close suggestions on outside click
   useEffect(() => {
@@ -101,6 +127,8 @@ export default function ExpenseModal({
       setReceiptUrl(undefined);
     }
     setShowSuggestions(false);
+    setAutoDetected(false);
+    setManualCategoryChange(false);
     // Auto-expand details when editing
     if (editingExpense) {
       setShowDetails(true);
@@ -186,11 +214,16 @@ export default function ExpenseModal({
 
           {/* Categoria - always visible */}
           <div>
-            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Categoria</label>
+            <div className="flex items-center gap-2 mb-1">
+              <label className="block text-sm font-medium text-primary dark:text-white">Categoria</label>
+              {autoDetected && (
+                <span className="text-[11px] font-semibold text-blue-500 bg-blue-50 dark:bg-blue-500/10 px-1.5 py-0.5 rounded">Auto</span>
+              )}
+            </div>
             {categories.length > 0 ? (
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => { setCategory(e.target.value); setManualCategoryChange(true); setAutoDetected(false); }}
                 className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
                 required
               >
@@ -199,9 +232,9 @@ export default function ExpenseModal({
                 ))}
               </select>
             ) : (
-              <p className="text-sm text-muted dark:text-gray-400 py-3">Crea categorias en Configuracion</p>
+              <p className="text-sm text-muted dark:text-gray-400 py-3">Activa categorias en Configuracion</p>
             )}
-            {!editingExpense && defaultCategory && category === defaultCategory && (
+            {!editingExpense && !autoDetected && defaultCategory && category === defaultCategory && (
               <p className="text-[11px] text-[#8E8E93] mt-0.5">Ultima categoria usada</p>
             )}
           </div>
