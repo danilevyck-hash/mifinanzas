@@ -106,6 +106,7 @@ export default function RecurringExpensesModal({ isOpen, onClose, categories }: 
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm("¿Eliminar este gasto recurrente?")) return;
     try {
       const res = await authFetch("/api/recurring-expenses", {
         method: "DELETE",

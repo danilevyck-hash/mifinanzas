@@ -49,6 +49,13 @@ export default function ExpenseModal({
   dayBeforeDate.setDate(dayBeforeDate.getDate() - 2);
   const dayBeforeStr = dayBeforeDate.toISOString().split("T")[0];
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
   // Fetch note suggestions when category changes
   useEffect(() => {
     if (!category || !isOpen) {

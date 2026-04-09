@@ -59,16 +59,20 @@ export default function CuentaPage() {
     try {
       const res = await authFetch("/api/categories");
       if (res.ok) { const data = await res.json(); if (Array.isArray(data)) setCategories(data); }
-    } catch {}
-  }, [user, authFetch]);
+    } catch {
+      toast("Error al cargar categorias", "error");
+    }
+  }, [user, authFetch, toast]);
 
   const fetchBudgets = useCallback(async () => {
     if (!user) return;
     try {
       const res = await authFetch(`/api/category-budgets?month=${currentMonth}`);
       if (res.ok) { const data = await res.json(); if (Array.isArray(data)) setBudgets(data); }
-    } catch {}
-  }, [user, authFetch, currentMonth]);
+    } catch {
+      toast("Error al cargar presupuestos", "error");
+    }
+  }, [user, authFetch, currentMonth, toast]);
 
   useEffect(() => { fetchCategories(); fetchBudgets(); }, [fetchCategories, fetchBudgets]);
 

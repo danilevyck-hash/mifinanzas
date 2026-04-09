@@ -7,6 +7,7 @@ import { PersonalExpense, Category } from "@/lib/supabase";
 import { formatCurrency, MONTH_NAMES } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
+import { useToast } from "@/components/Toast";
 
 const ResponsiveContainer = dynamic(() => import("recharts").then((m) => m.ResponsiveContainer), { ssr: false });
 const BarChart = dynamic(() => import("recharts").then((m) => m.BarChart), { ssr: false });
@@ -21,6 +22,7 @@ export default function ResumenPage() {
   const router = useRouter();
   const { user, authFetch } = useAuth();
   const { dark } = useTheme();
+  const { toast } = useToast();
   const [expenses, setExpenses] = useState<PersonalExpense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,9 +39,11 @@ export default function ResumenPage() {
       ]);
       if (expRes.ok) { const d = await expRes.json(); if (Array.isArray(d)) setExpenses(d); }
       if (catRes.ok) { const d = await catRes.json(); if (Array.isArray(d)) setCategories(d); }
-    } catch {}
+    } catch {
+      toast("Error al cargar datos", "error");
+    }
     finally { setLoading(false); }
-  }, [year, user, authFetch]);
+  }, [year, user, authFetch, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -77,14 +81,14 @@ export default function ResumenPage() {
       {/* Year nav */}
       <div className="flex items-center justify-center gap-4">
         <button onClick={() => { setYear((y) => y - 1); setExpandedMonth(null); }}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-[#007AFF]">
+          className="w-11 h-11 flex items-center justify-center rounded-full text-[#007AFF]">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <span className="text-[17px] font-semibold text-primary dark:text-white">{year}</span>
         <button onClick={() => { setYear((y) => y + 1); setExpandedMonth(null); }}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-[#007AFF]">
+          className="w-11 h-11 flex items-center justify-center rounded-full text-[#007AFF]">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
