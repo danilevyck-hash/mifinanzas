@@ -3,6 +3,7 @@ import { getAuthUserId } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 
+export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const userId = getAuthUserId(request);
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
