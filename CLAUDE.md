@@ -125,6 +125,17 @@ git push origin main   # Auto-deploy via Vercel
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon key
 - `ANTHROPIC_API_KEY` — Claude Vision para OCR de recibos
 
+## Changes — April 2026 Session
+
+### Synced Audit Fixes from Maaser
+- Error handling: try/catch on all async operations
+- Touch targets enlarged to 44px minimum
+- Scroll lock on modals (body overflow hidden)
+- Confirm delete dialogs added
+
+### API & Cache
+- All API routes have `export const dynamic = 'force-dynamic'`
+
 ## Sincronización MiFinanzas <-> Maaser/Finanzas
 
 **REGLA IMPORTANTE:** Cada cambio en el módulo de finanzas (features, bug fixes, UI changes) DEBE hacerse simultáneamente en:
