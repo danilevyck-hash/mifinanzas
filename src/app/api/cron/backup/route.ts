@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Upload to Supabase Storage
     const today = new Date().toISOString().split("T")[0];
-    const fileName = `backup-${today}.json`;
+    const fileName = `mifinanzas-backup-${today}.json`;
     const fileContent = JSON.stringify(backup, null, 2);
 
     const { error: uploadError } = await supabaseAdmin.storage
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
 
       const oldFiles = files.filter((f) => {
-        const match = f.name.match(/backup-(\d{4}-\d{2}-\d{2})\.json/);
+        const match = f.name.match(/mifinanzas-backup-(\d{4}-\d{2}-\d{2})\.json/);
         if (!match) return false;
         return new Date(match[1]) < cutoff;
       });
