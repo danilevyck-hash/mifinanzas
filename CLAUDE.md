@@ -1,6 +1,6 @@
 # MiFinanzas — Control de Gastos Personales
 
-PWA de finanzas personales para toda Latinoamérica. Diseño estilo Apple iOS. Registro de gastos, presupuestos por categoría, gastos recurrentes, metas de ahorro, OCR de recibos, y reportes.
+PWA de finanzas personales para toda Latinoamérica. Diseño estilo Apple iOS. Registro de gastos, presupuestos por categoría, gastos recurrentes, metas de ahorro, y reportes.
 
 ## Stack
 - **Framework:** Next.js 14 (App Router)
@@ -70,7 +70,6 @@ RLS habilitado en todas las tablas. Queries via supabaseAdmin (service_role).
 | `/api/user-preferences` | GET, POST | Preferencias (última categoría, método) |
 | `/api/notes-suggestions` | GET | Autocomplete de notas por categoría |
 | `/api/upload-receipt` | POST | Upload foto recibo a Supabase Storage |
-| `/api/scan-receipt` | POST | OCR con Claude Vision (extrae monto+categoría) |
 
 ## Design System (Apple iOS Style)
 - **Colores:** Azul Apple #007AFF, gris #8E8E93, fondo #F2F2F7, cards dark #1C1C1E, separadores #C6C6C8
@@ -100,7 +99,7 @@ RLS habilitado en todas las tablas. Queries via supabaseAdmin (service_role).
 | ImportModal | Importar CSV con preview y progreso |
 | SavingsGoalsModal | Metas con termómetro de progreso |
 | ConfirmModal | Confirmación Apple action sheet style |
-| ReceiptCapture | Foto de recibo + OCR automático con Claude Vision |
+| ReceiptCapture | Foto de recibo adjunta al gasto |
 | Confetti | Celebración CSS, tap para cerrar |
 | SkeletonLoader | Pulse loaders para KPIs y categorías |
 | OfflineBanner | Banner "Sin conexión" |
@@ -123,7 +122,6 @@ git push origin main   # Auto-deploy via Vercel
 - `SUPABASE_SERVICE_ROLE_KEY` — service role key
 - `NEXT_PUBLIC_SUPABASE_URL` — URL del proyecto Supabase
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon key
-- `ANTHROPIC_API_KEY` — Claude Vision para OCR de recibos
 
 ## Changes — April 2026 Session
 

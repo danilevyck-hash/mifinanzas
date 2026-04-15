@@ -2,27 +2,17 @@
 
 import { useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
-import { useToast } from "@/components/Toast";
-
-type ScanResult = {
-  amount: number;
-  category: string;
-  notes: string;
-};
 
 type Props = {
   onCapture: (url: string) => void;
-  onScanResult?: (result: ScanResult) => void;
   existingUrl?: string;
   onRemove?: () => void;
   onViewFull?: (url: string) => void;
 };
 
-export default function ReceiptCapture({ onCapture, onScanResult, existingUrl, onRemove, onViewFull }: Props) {
+export default function ReceiptCapture({ onCapture, existingUrl, onRemove, onViewFull }: Props) {
   const { authFetch } = useAuth();
-  const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
-  const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -44,22 +34,6 @@ export default function ReceiptCapture({ onCapture, onScanResult, existingUrl, o
       if (res.ok) {
         const data = await res.json();
         onCapture(data.url);
-
-        // Auto-scan the receipt with Claude Vision
-        if (onScanResult) {
-          setScanning(true);
-          try {
-            const scanRes = await authFetch("/api/scan-receipt", {
-              method: "POST",
-              body: JSON.stringify({ image_url: data.url }),
-            });
-            if (scanRes.ok) {
-              const scanData = await scanRes.json();
-              onScanResult(scanData);
-            }
-          } catch { toast("No se pudo leer el recibo", "error"); }
-          finally { setScanning(false); }
-        }
       } else {
         setPreview(null);
       }
@@ -96,17 +70,7 @@ export default function ReceiptCapture({ onCapture, onScanResult, existingUrl, o
             <img src={displayUrl} alt="Recibo" className="h-full w-full object-cover" />
           </button>
           <div className="flex-1 min-w-0">
-            {scanning ? (
-              <span className="text-xs text-blue-500 font-medium flex items-center gap-1.5">
-                <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Leyendo recibo...
-              </span>
-            ) : (
-              <span className="text-xs text-green-600 dark:text-green-400 font-medium">Recibo adjunto</span>
-            )}
+            <span className="text-xs text-green-600 dark:text-green-400 font-medium">Recibo adjunto</span>
           </div>
           <div className="flex gap-1 ml-auto">
             <button

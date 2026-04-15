@@ -321,14 +321,6 @@ export default function ExpenseModal({
               </div>
               <ReceiptCapture
                 onCapture={(url) => setReceiptUrl(url)}
-                onScanResult={(result) => {
-                  if (result.amount && !amount) setAmount(result.amount.toString());
-                  if (result.category) {
-                    const match = categories.find((c) => c.name.toLowerCase() === result.category.toLowerCase());
-                    if (match) setCategory(match.name);
-                  }
-                  if (result.notes && !notes) setNotes(result.notes);
-                }}
                 existingUrl={receiptUrl}
                 onRemove={() => setReceiptUrl(undefined)}
                 onViewFull={(url) => setViewingReceipt(url)}
