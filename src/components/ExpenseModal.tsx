@@ -6,6 +6,7 @@ import { PersonalExpense, Category, PAYMENT_METHODS } from "@/lib/supabase";
 import { detectCategory } from "@/lib/default-categories";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import ReceiptCapture from "./ReceiptCapture";
 import ReceiptViewer from "./ReceiptViewer";
 
@@ -51,12 +52,7 @@ export default function ExpenseModal({
   dayBeforeDate.setDate(dayBeforeDate.getDate() - 2);
   const dayBeforeStr = dayBeforeDate.toISOString().split("T")[0];
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Fetch note suggestions when category changes
   useEffect(() => {

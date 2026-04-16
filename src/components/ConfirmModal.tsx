@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 type Props = {
   isOpen: boolean;
@@ -14,6 +15,7 @@ type Props = {
 export default function ConfirmModal({ isOpen, onClose, onConfirm, title, message }: Props) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  useBodyScrollLock(isOpen);
 
   if (!isOpen || !mounted) return null;
 

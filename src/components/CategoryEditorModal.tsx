@@ -6,6 +6,7 @@ import { Category } from "@/lib/supabase";
 import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
+import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 type Props = {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export default function CategoryEditorModal({ isOpen, onClose, categories, onUpd
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  useBodyScrollLock(isOpen);
 
   if (!isOpen || !mounted) return null;
 
