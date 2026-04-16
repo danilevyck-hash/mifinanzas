@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { PersonalExpense, Category, PAYMENT_METHODS } from "@/lib/supabase";
 import { detectCategory } from "@/lib/default-categories";
 import { useAuth } from "@/lib/auth";
@@ -37,9 +38,10 @@ export default function ExpenseModal({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>(undefined);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
   const [autoDetected, setAutoDetected] = useState(false);
   const [manualCategoryChange, setManualCategoryChange] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const todayStr = new Date().toISOString().split("T")[0];
   const yesterdayDate = new Date();
@@ -136,15 +138,9 @@ export default function ExpenseModal({
     setShowSuggestions(false);
     setAutoDetected(false);
     setManualCategoryChange(false);
-    // Auto-expand details when editing
-    if (editingExpense) {
-      setShowDetails(true);
-    } else {
-      setShowDetails(false);
-    }
   }, [editingExpense, isOpen, categories, defaultCategory, defaultPaymentMethod, todayStr]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,24 +182,24 @@ export default function ExpenseModal({
         : "bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400"
     }`;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 animate-fade-in" onClick={onClose}>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white dark:bg-[#1C1C1E] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-[#C6C6C8]/30 dark:border-gray-700/50">
-          <button type="button" onClick={onClose} className="text-[17px] text-[#007AFF] min-w-[70px] text-left">Cancelar</button>
+  return createPortal(
+    <div
+      className="fixed top-0 left-0 right-0 bg-[#F2F2F7] dark:bg-[#000] z-[9999] animate-slide-up"
+      style={{ height: "100dvh" }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <div className="flex items-center justify-between px-5 pt-14 pb-3 border-b border-[#C6C6C8]/30 dark:border-gray-700/50 shrink-0 bg-white dark:bg-[#1C1C1E]">
+          <button type="button" onClick={onClose} className="text-[17px] text-[#007AFF] min-w-[70px] text-left min-h-[44px]">Cancelar</button>
           <h2 className="text-[17px] font-semibold text-primary dark:text-white">
             {editingExpense ? "Editar Gasto" : "Nuevo Gasto"}
           </h2>
-          <button type="submit" disabled={saving} className="text-[17px] text-[#007AFF] font-semibold min-w-[70px] text-right disabled:opacity-50">
+          <button type="submit" disabled={saving} className="text-[17px] text-[#007AFF] font-semibold min-w-[70px] text-right disabled:opacity-50 min-h-[44px]">
             {saving ? "..." : "Guardar"}
           </button>
         </div>
-        <div className="p-5 space-y-4">
-          {/* Monto - always visible, first field */}
+        <div className="p-5 space-y-4 overflow-y-auto flex-1" style={{ WebkitOverflowScrolling: "touch" }}>
+          {/* Monto */}
           <div>
             <label className="block text-sm font-medium text-primary dark:text-white mb-1">Monto ($)</label>
             <input
@@ -219,7 +215,7 @@ export default function ExpenseModal({
             />
           </div>
 
-          {/* Categoria - always visible */}
+          {/* Categoria */}
           <div>
             <div className="flex items-center gap-2 mb-1">
               <label className="block text-sm font-medium text-primary dark:text-white">Categoria</label>
@@ -246,93 +242,89 @@ export default function ExpenseModal({
             )}
           </div>
 
-          {/* Toggle for more details */}
-          <button type="button" onClick={() => setShowDetails(!showDetails)}
-            className="w-full py-2 text-[15px] text-[#007AFF] font-medium">
-            {showDetails ? "Menos detalles" : "Mas detalles"}
-          </button>
-
-          {/* Expandable details section */}
-          {showDetails && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-primary dark:text-white mb-1">Fecha</label>
-                <div className="flex gap-2 mb-1.5">
-                  <button type="button" onClick={() => setDate(todayStr)} className={dateShortcutClass(todayStr)}>
-                    Hoy
-                  </button>
-                  <button type="button" onClick={() => setDate(yesterdayStr)} className={dateShortcutClass(yesterdayStr)}>
-                    Ayer
-                  </button>
-                  <button type="button" onClick={() => setDate(dayBeforeStr)} className={dateShortcutClass(dayBeforeStr)}>
-                    Anteayer
-                  </button>
-                </div>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
-                  required
-                />
-                <p className="text-xs text-muted dark:text-gray-400 mt-0.5">Formato: DD/MM/AAAA</p>
-              </div>
-              <div className="relative">
-                <label className="block text-sm font-medium text-primary dark:text-white mb-1">Notas</label>
-                <input
-                  ref={notesRef}
-                  type="text"
-                  value={notes}
-                  onChange={(e) => { setNotes(e.target.value); setShowSuggestions(true); }}
-                  onFocus={() => setShowSuggestions(true)}
-                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
-                  placeholder="Descripcion del gasto..."
-                />
-                {showSuggestions && filteredSuggestions.length > 0 && (
-                  <div
-                    ref={suggestionsRef}
-                    className="flex flex-wrap gap-1.5 mt-1.5"
-                  >
-                    {filteredSuggestions.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => { setNotes(s); setShowSuggestions(false); }}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400 hover:bg-blue-500 hover:text-white transition-colors truncate max-w-[200px]"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-primary dark:text-white mb-1">Metodo de Pago</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
-                  required
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
-              <ReceiptCapture
-                onCapture={(url) => setReceiptUrl(url)}
-                existingUrl={receiptUrl}
-                onRemove={() => setReceiptUrl(undefined)}
-                onViewFull={(url) => setViewingReceipt(url)}
-              />
+          {/* Fecha */}
+          <div>
+            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Fecha</label>
+            <div className="flex gap-2 mb-1.5">
+              <button type="button" onClick={() => setDate(todayStr)} className={dateShortcutClass(todayStr)}>
+                Hoy
+              </button>
+              <button type="button" onClick={() => setDate(yesterdayStr)} className={dateShortcutClass(yesterdayStr)}>
+                Ayer
+              </button>
+              <button type="button" onClick={() => setDate(dayBeforeStr)} className={dateShortcutClass(dayBeforeStr)}>
+                Anteayer
+              </button>
             </div>
-          )}
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+              required
+            />
+          </div>
+
+          {/* Metodo de Pago */}
+          <div>
+            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Metodo de Pago</label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 text-primary dark:text-white transition-shadow text-base"
+              required
+            >
+              {PAYMENT_METHODS.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Notas */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-primary dark:text-white mb-1">Notas</label>
+            <input
+              ref={notesRef}
+              type="text"
+              value={notes}
+              onChange={(e) => { setNotes(e.target.value); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
+              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow text-base bg-white dark:bg-gray-800 text-primary dark:text-white"
+              placeholder="Descripcion del gasto..."
+            />
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="flex flex-wrap gap-1.5 mt-1.5"
+              >
+                {filteredSuggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => { setNotes(s); setShowSuggestions(false); }}
+                    className="text-xs px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-muted dark:text-gray-400 hover:bg-blue-500 hover:text-white transition-colors truncate max-w-[200px]"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recibo */}
+          <ReceiptCapture
+            onCapture={(url) => setReceiptUrl(url)}
+            existingUrl={receiptUrl}
+            onRemove={() => setReceiptUrl(undefined)}
+            onViewFull={(url) => setViewingReceipt(url)}
+          />
         </div>
       </form>
 
       {viewingReceipt && (
         <ReceiptViewer url={viewingReceipt} onClose={() => setViewingReceipt(null)} />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

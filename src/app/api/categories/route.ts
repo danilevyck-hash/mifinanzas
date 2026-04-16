@@ -35,27 +35,59 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(data);
 }
 
-// Toggle category on/off
+// POST: toggle pre-defined OR create custom category
+// Body shape A (toggle default): { name, enabled }
+// Body shape B (create custom):  { name, color, icon, custom: true }
 export async function POST(request: NextRequest) {
   const userId = getAuthUserId(request);
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const body = await request.json();
-  const { name, enabled } = body;
+  const { name, enabled, color, icon, custom } = body;
 
-  if (!name) return NextResponse.json({ error: "Falta el nombre" }, { status: 400 });
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return NextResponse.json({ error: "Falta el nombre" }, { status: 400 });
+  }
 
-  const defaultCat = DEFAULT_CATEGORIES.find((c) => c.name === name);
+  const cleanName = name.trim();
+
+  // CREATE CUSTOM CATEGORY
+  if (custom) {
+    if (!color || !icon) {
+      return NextResponse.json({ error: "Falta color o icono" }, { status: 400 });
+    }
+    // Check if name already exists (case-insensitive)
+    const { data: existing } = await supabaseAdmin
+      .from("categories")
+      .select("id, name")
+      .eq("user_id", userId)
+      .ilike("name", cleanName);
+
+    if (existing && existing.length > 0) {
+      return NextResponse.json({ error: "Ya existe una categoria con ese nombre" }, { status: 400 });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("categories")
+      .insert([{ user_id: userId, name: cleanName, color, icon }])
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
+  }
+
+  // TOGGLE PRE-DEFINED CATEGORY
+  const defaultCat = DEFAULT_CATEGORIES.find((c) => c.name === cleanName);
   if (!defaultCat) return NextResponse.json({ error: "Categoria no valida" }, { status: 400 });
 
   if (enabled) {
-    // Check if already exists
     const { data: existing } = await supabaseAdmin
       .from("categories")
       .select("id")
       .eq("user_id", userId)
-      .eq("name", name)
-      .single();
+      .eq("name", cleanName)
+      .maybeSingle();
 
     if (existing) return NextResponse.json(existing);
 
@@ -68,16 +100,94 @@ export async function POST(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
   } else {
-    // Delete category (expenses keep their category name)
     const { error } = await supabaseAdmin
       .from("categories")
       .delete()
       .eq("user_id", userId)
-      .eq("name", name);
+      .eq("name", cleanName);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
   }
+}
+
+// PUT: rename category + migrate all expenses to the new name + update icon/color
+// Body: { id, name, color?, icon? }
+export async function PUT(request: NextRequest) {
+  const userId = getAuthUserId(request);
+  if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  const body = await request.json();
+  const { id, name, color, icon } = body;
+
+  if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+  if (!name || !name.trim()) return NextResponse.json({ error: "Falta el nombre" }, { status: 400 });
+
+  const cleanName = name.trim();
+
+  // Get the current name
+  const { data: current, error: getErr } = await supabaseAdmin
+    .from("categories")
+    .select("id, name")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .single();
+
+  if (getErr || !current) return NextResponse.json({ error: "Categoria no encontrada" }, { status: 404 });
+
+  const oldName = current.name;
+
+  // If name is changing, check no conflict
+  if (oldName !== cleanName) {
+    const { data: conflict } = await supabaseAdmin
+      .from("categories")
+      .select("id")
+      .eq("user_id", userId)
+      .ilike("name", cleanName)
+      .neq("id", id);
+
+    if (conflict && conflict.length > 0) {
+      return NextResponse.json({ error: "Ya existe una categoria con ese nombre" }, { status: 400 });
+    }
+  }
+
+  const updates: Record<string, unknown> = { name: cleanName };
+  if (color) updates.color = color;
+  if (icon) updates.icon = icon;
+
+  const { data, error } = await supabaseAdmin
+    .from("categories")
+    .update(updates)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Migrate all expenses with the old name → new name
+  if (oldName !== cleanName) {
+    await supabaseAdmin
+      .from("personal_expenses")
+      .update({ category: cleanName })
+      .eq("user_id", userId)
+      .eq("category", oldName);
+
+    // Also migrate budgets and recurring
+    await supabaseAdmin
+      .from("category_budgets")
+      .update({ category: cleanName })
+      .eq("user_id", userId)
+      .eq("category", oldName);
+
+    await supabaseAdmin
+      .from("recurring_expenses")
+      .update({ category: cleanName })
+      .eq("user_id", userId)
+      .eq("category", oldName);
+  }
+
+  return NextResponse.json(data);
 }
 
 export async function DELETE(request: NextRequest) {
@@ -85,6 +195,7 @@ export async function DELETE(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { id } = await request.json();
+  if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
 
   const { error } = await supabaseAdmin
     .from("categories")
