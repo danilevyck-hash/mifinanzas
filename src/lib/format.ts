@@ -13,6 +13,20 @@ export function formatCurrency(amount: number): string {
   });
 }
 
+// Returns YYYY-MM-DD in the user's local timezone (not UTC).
+// Using new Date().toISOString() shifts the date by 1 day for users west of UTC
+// (Panama UTC-5: at 7pm local on Apr 4, toISOString returns Apr 5).
+export function todayLocalISO(): string {
+  return localISO(new Date());
+}
+
+export function localISO(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function formatDate(dateStr: string): string {
   if (!dateStr) return "-";
   const date = new Date(dateStr + "T12:00:00");

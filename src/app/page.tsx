@@ -3,12 +3,13 @@
 import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PersonalExpense, Category, CategoryBudget, getCategoryIcon } from "@/lib/supabase";
-import { formatCurrency, formatDate, MONTH_NAMES } from "@/lib/format";
+import { formatCurrency, formatDate, todayLocalISO, MONTH_NAMES } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import ExpenseModal from "@/components/ExpenseModal";
 import ExportModal from "@/components/ExportModal";
 import ConfirmModal from "@/components/ConfirmModal";
+import CategoryExpensesModal from "@/components/CategoryExpensesModal";
 import { KPISkeleton, CategorySkeleton } from "@/components/SkeletonLoader";
 
 import { usePreferences } from "@/lib/usePreferences";
@@ -52,6 +53,7 @@ function HomeContent() {
   const [showSearch, setShowSearch] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
   const [fabVisible, setFabVisible] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const lastScrollY = useRef(0);
 
   const viewMonthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
@@ -209,7 +211,7 @@ function HomeContent() {
   };
 
   const handleDuplicate = async (expense: PersonalExpense) => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayLocalISO();
     const dup = {
       user_id: expense.user_id,
       date: today,
@@ -329,7 +331,7 @@ function HomeContent() {
         if (prefs.budgetAlerts === false) { setAlertsShown(true); return; }
       } catch {}
     }
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayLocalISO();
     const lastAlert = localStorage.getItem("mifinanzas_alerts_date");
     if (lastAlert === today) { setAlertsShown(true); return; }
     setAlertsShown(true);
@@ -409,7 +411,7 @@ function HomeContent() {
     router.push(`/?month=${m}&year=${y}`);
   };
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayLocalISO();
 
   if (!user) return null;
 
@@ -529,16 +531,25 @@ function HomeContent() {
 
               return (
                 <div key={cat.name} className={idx > 0 ? "border-t border-[#C6C6C8]/20 dark:border-gray-800 ml-6 -mx-0" : ""}>
-                  <div className={idx > 0 ? "-ml-6" : ""}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory(cat.name)}
+                    className={`w-full text-left active:bg-[#E5E5EA]/40 dark:active:bg-gray-800/40 transition-colors ${idx > 0 ? "-ml-6 pl-6" : ""}`}
+                  >
                     <div className="flex items-center justify-between py-2.5">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
                         <span className="text-[15px] text-primary dark:text-white">{iconMap[cat.name] || getCategoryIcon(cat.name)} {cat.name}</span>
                       </div>
-                      <span className="text-[15px] tabular-nums text-primary dark:text-white">{formatCurrency(cat.total)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[15px] tabular-nums text-primary dark:text-white">{formatCurrency(cat.total)}</span>
+                        <svg className="h-3.5 w-3.5 text-[#C7C7CC]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
                     </div>
                     {hasBudget && (
-                      <div className="pb-2">
+                      <div className="pb-2 pr-5">
                         <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-full h-1.5 overflow-hidden mb-1">
                           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(budgetPct, 100)}%`, backgroundColor: budgetBarColor }} />
                         </div>
@@ -547,7 +558,7 @@ function HomeContent() {
                         </p>
                       </div>
                     )}
-                  </div>
+                  </button>
                 </div>
               );
             })}
@@ -811,6 +822,20 @@ function HomeContent() {
         defaultPaymentMethod={prefs.last_payment_method}
       />
       <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} expenses={allExpenses} categories={categories} />
+      <CategoryExpensesModal
+        isOpen={selectedCategory !== null}
+        onClose={() => setSelectedCategory(null)}
+        category={selectedCategory || ""}
+        expenses={expenses}
+        iconMap={iconMap}
+        colorMap={colorMap}
+        todayStr={todayStr}
+        onSelectExpense={(e) => {
+          setSelectedCategory(null);
+          setEditing(e);
+          setModalOpen(true);
+        }}
+      />
     </div>
 
     {/* Action sheet for "Mas" menu */}

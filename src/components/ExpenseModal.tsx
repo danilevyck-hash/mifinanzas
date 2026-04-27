@@ -7,6 +7,7 @@ import { detectCategory } from "@/lib/default-categories";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { localISO, todayLocalISO } from "@/lib/format";
 import ReceiptCapture from "./ReceiptCapture";
 import ReceiptViewer from "./ReceiptViewer";
 
@@ -44,13 +45,13 @@ export default function ExpenseModal({
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayLocalISO();
   const yesterdayDate = new Date();
   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterdayStr = yesterdayDate.toISOString().split("T")[0];
+  const yesterdayStr = localISO(yesterdayDate);
   const dayBeforeDate = new Date();
   dayBeforeDate.setDate(dayBeforeDate.getDate() - 2);
-  const dayBeforeStr = dayBeforeDate.toISOString().split("T")[0];
+  const dayBeforeStr = localISO(dayBeforeDate);
 
   useBodyScrollLock(isOpen);
 
